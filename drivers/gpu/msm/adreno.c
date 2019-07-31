@@ -16,8 +16,10 @@
 #include <soc/qcom/scm.h>
 
 #include "adreno.h"
+#if 0
 #include "adreno_a3xx.h"
 #include "adreno_a5xx.h"
+#endif
 #include "adreno_a6xx.h"
 #include "adreno_compat.h"
 #include "adreno_iommu.h"
@@ -1921,6 +1923,7 @@ int adreno_set_unsecured_mode(struct adreno_device *adreno_dev,
 {
 	int ret = 0;
 
+#if 0
 	if (!adreno_is_a5xx(adreno_dev) && !adreno_is_a6xx(adreno_dev))
 		return -EINVAL;
 
@@ -1930,6 +1933,7 @@ int adreno_set_unsecured_mode(struct adreno_device *adreno_dev,
 		if (ret)
 			return ret;
 	}
+#endif
 
 	/* GPU comes up in secured mode, make it unsecured by default */
 	if (adreno_dev->zap_loaded)
