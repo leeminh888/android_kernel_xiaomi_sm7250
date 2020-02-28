@@ -1559,3 +1559,5 @@ config FACTORY_BUILD
 	help
 	  This macro will be defined Whenen build factory version. It is used to
 	  distinguish factory and dev codes in kernel.
+
+source "techpack/Kconfig"
