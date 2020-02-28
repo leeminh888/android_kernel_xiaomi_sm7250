@@ -130,4 +130,6 @@ source "techpack/data/drivers/rmnet/perf/Kconfig"
 
 source "techpack/data/drivers/rmnet/shs/Kconfig"
 
+source "drivers/staging/qcacld-3.0/Kconfig"
+
 endif # STAGING

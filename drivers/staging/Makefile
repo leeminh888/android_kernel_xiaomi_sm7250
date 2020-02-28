@@ -53,5 +53,4 @@ obj-$(CONFIG_SOC_MT7621)	+= mt7621-dts/
 obj-$(CONFIG_STAGING_GASKET_FRAMEWORK)	+= gasket/
 obj-$(CONFIG_XIL_AXIS_FIFO)	+= axis-fifo/
 obj-$(CONFIG_EROFS_FS)		+= erofs/
-obj-$(CONFIG_RMNET_PERF)	+= ../../techpack/data/drivers/rmnet/perf/
-obj-$(CONFIG_RMNET_SHS)		+= ../../techpack/data/drivers/rmnet/shs/
+obj-$(CONFIG_QCA_CLD_WLAN)	+= qcacld-3.0/
