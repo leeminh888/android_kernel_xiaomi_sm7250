@@ -55,3 +55,4 @@ obj-$(CONFIG_XIL_AXIS_FIFO)	+= axis-fifo/
 obj-$(CONFIG_EROFS_FS)		+= erofs/
 obj-$(CONFIG_RMNET_PERF)	+= rmnet/perf/
 obj-$(CONFIG_RMNET_SHS)		+= rmnet/shs/
+obj-$(CONFIG_QCA_CLD_WLAN)	+= qcacld-3.0/
