@@ -129,4 +129,6 @@ source "drivers/staging/erofs/Kconfig"
 source "drivers/staging/rmnet/perf/Kconfig"
 source "drivers/staging/rmnet/shs/Kconfig"
 
+source "drivers/staging/qcacld-3.0/Kconfig"
+
 endif # STAGING
