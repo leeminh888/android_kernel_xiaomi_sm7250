@@ -126,4 +126,8 @@ source "drivers/staging/axis-fifo/Kconfig"
 
 source "drivers/staging/erofs/Kconfig"
 
+source "techpack/data/drivers/rmnet/perf/Kconfig"
+
+source "techpack/data/drivers/rmnet/shs/Kconfig"
+
 endif # STAGING
