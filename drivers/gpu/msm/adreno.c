@@ -10,7 +10,6 @@
 #include <linux/of_fdt.h>
 #include <linux/module.h>
 #include <linux/msm_kgsl.h>
-#include <linux/msm-bus.h>
 #include <linux/regulator/consumer.h>
 #include <linux/nvmem-consumer.h>
 #include <soc/qcom/scm.h>
@@ -589,9 +588,6 @@ static irqreturn_t adreno_irq_handler(struct kgsl_device *device)
 	unsigned int status = 0, fence = 0, fence_retries = 0, tmp, int_bit;
 	unsigned int shadow_status = 0;
 	int i;
-	u64 ts, ts1, ts2;
-
-	ts = gmu_core_dev_read_ao_counter(device);
 
 	atomic_inc(&adreno_dev->pending_irq_refcnt);
 	/* Ensure this increment is done before the IRQ status is updated */
@@ -618,8 +614,6 @@ static irqreturn_t adreno_irq_handler(struct kgsl_device *device)
 				&fence);
 
 		while (fence != 0) {
-			ts1 =  gmu_core_dev_read_ao_counter(device);
-
 			/* Wait for small time before trying again */
 			udelay(1);
 			adreno_readreg(adreno_dev,
@@ -627,17 +621,14 @@ static irqreturn_t adreno_irq_handler(struct kgsl_device *device)
 					&fence);
 
 			if (fence_retries == FENCE_RETRY_MAX && fence != 0) {
-				ts2 =  gmu_core_dev_read_ao_counter(device);
-
 				adreno_readreg(adreno_dev,
 					ADRENO_REG_GMU_RBBM_INT_UNMASKED_STATUS,
 					&shadow_status);
 
 				dev_crit_ratelimited(device->dev,
-					"Status=0x%x Unmasked status=0x%x Timestamps:%llx %llx %llx\n",
+					"Status=0x%x Unmasked status=0x%x Mask=0x%x\n",
 					shadow_status & irq_params->mask,
-					shadow_status, ts, ts1, ts2);
-
+					shadow_status, irq_params->mask);
 				adreno_set_gpu_fault(adreno_dev,
 						ADRENO_GMU_FAULT);
 				adreno_dispatcher_schedule(KGSL_DEVICE
@@ -2006,6 +1997,8 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 	if (device->pwrctrl.gpu_cfg)
 		msm_bus_scale_client_update_request(device->pwrctrl.gpu_cfg,
 			KGSL_GPU_CFG_PATH_HIGH);
+	/* Clear any GPU faults that might have been left over */
+	adreno_clear_gpu_fault(adreno_dev);
 
 	/* Put the GPU in a responsive state */
 	status = kgsl_pwrctrl_change_state(device, KGSL_STATE_AWARE);
@@ -2237,15 +2230,6 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 	if (ADRENO_QUIRK(adreno_dev, ADRENO_QUIRK_HFI_USE_REG))
 		gmu_core_dev_oob_clear(device, oob_boot_slumber);
 
-	/*
-	 * Low vote is enough after wakeup completes, this will make
-	 * sure CPU to GPU AHB infrastructure clocks are running at-least
-	 * at minimum frequency.
-	 */
-	if (device->pwrctrl.gpu_cfg)
-		msm_bus_scale_client_update_request(device->pwrctrl.gpu_cfg,
-			KGSL_GPU_CFG_PATH_LOW);
-
 	return 0;
 
 error_oob_clear:
@@ -2266,9 +2250,6 @@ error_pwr_off:
 		pm_qos_update_request(&device->pwrctrl.pm_qos_req_dma,
 				pmqos_active_vote);
 
-	if (device->pwrctrl.gpu_cfg)
-		msm_bus_scale_client_update_request(device->pwrctrl.gpu_cfg,
-			KGSL_GPU_CFG_PATH_OFF);
 	return status;
 }
 
@@ -2375,10 +2356,6 @@ no_gx_power:
 	 * destroy any pending contexts and their pagetables
 	 */
 	adreno_set_active_ctxs_null(adreno_dev);
-
-	if (device->pwrctrl.gpu_cfg)
-		msm_bus_scale_client_update_request(device->pwrctrl.gpu_cfg,
-			KGSL_GPU_CFG_PATH_OFF);
 
 	clear_bit(ADRENO_DEVICE_STARTED, &adreno_dev->priv);
 
