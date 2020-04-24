@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2019, The Linux foundation. All rights reserved.
+ * Copyright (C) 2020 XiaoMi, Inc.
  */
+
 #include <linux/cdev.h>
 #include <linux/circ_buf.h>
 #include <linux/clk.h>
@@ -14,7 +16,6 @@
 #include <linux/io.h>
 #include <linux/ioctl.h>
 #include <linux/kernel.h>
-#include <linux/kfifo.h>
 #include <linux/list.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -442,11 +443,15 @@ static int wigig_sensing_change_state(struct wigig_sensing_ctx *ctx,
 	}
 	if (new_state <= WIGIG_SENSING_STATE_MIN ||
 	    new_state >= WIGIG_SENSING_STATE_MAX) {
-		pr_err("new_state (%d) is invalid\n", new_state);
+		pr_err("new_state is invalid\n");
 		return -EINVAL;
 	}
 
 	curr_state = state->state;
+	if (new_state == curr_state) {
+		pr_debug("Already in the requested state, bailing out\n");
+		return 0;
+	}
 
 	/* Moving to SYS_ASSEERT state is always allowed */
 	if (new_state == WIGIG_SENSING_STATE_SYS_ASSERT)
@@ -517,6 +522,7 @@ static int wigig_sensing_ioc_change_mode(struct wigig_sensing_ctx *ctx,
 					 struct wigig_sensing_change_mode *req)
 {
 	struct wigig_sensing_stm sim_state;
+	enum wigig_sensing_stm_e new_state;
 	int rc;
 	u32 ch;
 
@@ -584,6 +590,11 @@ static int wigig_sensing_ioc_change_mode(struct wigig_sensing_ctx *ctx,
 			rc = -EFAULT;
 	}
 
+	ctx->dropped_bursts = 0;
+	ctx->stm.channel_request = ch;
+	ctx->stm.mode = req.mode;
+	ctx->stm.change_mode_in_progress = false;
+
 End:
 	ctx->stm.state_request = WIGIG_SENSING_STATE_MIN;
 	ctx->stm.channel_request = 0;
@@ -624,19 +635,9 @@ static int wigig_sensing_ioc_get_num_avail_bursts(
 		return 0;
 }
 
-static int wigig_sensing_ioc_get_event(struct wigig_sensing_ctx *ctx,
-				       enum wigig_sensing_event *event)
+static int wigig_sensing_ioc_get_event(struct wigig_sensing_ctx *ctx)
 {
-	u32 copied;
-
-	if (!ctx->event_pending)
-		return -EINVAL;
-
-	if (kfifo_len(&ctx->events_fifo) == 1)
-		ctx->event_pending = false;
-
-	return kfifo_to_user(&ctx->events_fifo, event,
-			     sizeof(enum wigig_sensing_event), &copied);
+	return 0;
 }
 
 static int wigig_sensing_open(struct inode *inode, struct file *filp)
@@ -667,8 +668,7 @@ static unsigned int wigig_sensing_poll(struct file *filp, poll_table *wait)
 
 	poll_wait(filp, &ctx->data_wait_q, wait);
 
-	if (!ctx->stm.change_mode_in_progress &&
-	    circ_cnt(&ctx->cir_data.b, ctx->cir_data.size_bytes))
+	if (circ_cnt(&ctx->cir_data.b, ctx->cir_data.size_bytes))
 		mask |= (POLLIN | POLLRDNORM);
 
 	if (ctx->event_pending)
@@ -691,15 +691,6 @@ static ssize_t wigig_sensing_read(struct file *filp, char __user *buf,
 	    ctx->stm.state == WIGIG_SENSING_STATE_SYS_ASSERT)
 		return -ENODEV;
 
-	if (ctx->stm.change_mode_in_progress)
-		return -EINVAL;
-
-	/* Read buffer too small */
-	if (count < ctx->stm.burst_size) {
-		pr_err("Read buffer must be larger than burst size\n");
-		return -EINVAL;
-	}
-
 	/* No data in the buffer */
 	while (circ_cnt(&d->b, d->size_bytes) == 0) {
 		if (filp->f_flags & O_NONBLOCK)
@@ -709,11 +700,11 @@ static ssize_t wigig_sensing_read(struct file *filp, char __user *buf,
 			circ_cnt(&d->b, d->size_bytes) != 0))
 			return -ERESTARTSYS;
 	}
+
 	if (mutex_lock_interruptible(&d->lock))
 		return -ERESTARTSYS;
 
 	copy_size = min_t(u32, circ_cnt(&d->b, d->size_bytes), count);
-	copy_size -= copy_size % ctx->stm.burst_size;
 	size_to_end = circ_cnt_to_end(&d->b, d->size_bytes);
 	tail = d->b.tail;
 	pr_debug("copy_size=%u, size_to_end=%u, head=%u, tail=%u\n",
@@ -773,7 +764,7 @@ static int wigig_sensing_release(struct inode *inode, struct file *filp)
 }
 
 static long wigig_sensing_ioctl(struct file *file, unsigned int cmd,
-				__user unsigned long arg)
+				unsigned long arg)
 {
 	int rc;
 	struct wigig_sensing_ctx *ctx = file->private_data;
@@ -830,8 +821,7 @@ static long wigig_sensing_ioctl(struct file *file, unsigned int cmd,
 		break;
 	case WIGIG_SENSING_IOCTL_GET_EVENT:
 		pr_info("Received WIGIG_SENSING_IOCTL_GET_EVENT command\n");
-		rc = wigig_sensing_ioc_get_event(ctx,
-			(enum wigig_sensing_event *)arg);
+		rc = wigig_sensing_ioc_get_event(ctx);
 		break;
 	case WIGIG_SENSING_IOCTL_GET_NUM_AVAIL_BURSTS:
 		pr_info("Received WIGIG_SENSING_IOCTL_GET_NUM_AVAIL_BURSTS command\n");
@@ -931,6 +921,12 @@ static int wigig_sensing_handle_fifo_ready_dri(struct wigig_sensing_ctx *ctx)
 		goto End;
 	}
 
+	if (!ctx->stm.enabled && burst_size != 0) {
+		pr_info("Invalid burst size while disabled %d\n", burst_size);
+		rc = -EFAULT;
+		goto End;
+	}
+
 	ctx->stm.burst_size = burst_size;
 	pr_info_ratelimited("burst_size = %u\n", burst_size);
 	if (ctx->stm.state >= WIGIG_SENSING_STATE_SYS_ASSERT ||
@@ -984,9 +980,7 @@ static int wigig_sensing_handle_fifo_ready_dri(struct wigig_sensing_ctx *ctx)
 	ctx->stm.mode = ctx->stm.mode_request;
 
 End:
-	ctx->stm.change_mode_in_progress = false;
 	mutex_unlock(&ctx->spi_lock);
-	wake_up_interruptible(&ctx->cmd_wait_q);
 	return rc;
 }
 
@@ -1000,7 +994,6 @@ static int wigig_sensing_chip_data_ready_internal(struct wigig_sensing_ctx *ctx,
 	u32 bytes_to_read;
 	u32 spi_transaction_size;
 	u32 available_space_to_end;
-	u32 orig_head;
 
 	/*
 	 * Make sure that fill_level is in 32 bit units
@@ -1194,22 +1187,6 @@ cmd_reply_buf_alloc_failed:
 	return rc;
 }
 
-static int wigig_sensing_send_event(struct wigig_sensing_ctx *ctx,
-				    enum wigig_sensing_event event)
-{
-	if (kfifo_is_full(&ctx->events_fifo)) {
-		pr_err("events fifo is full, unable to send event\n");
-		return -EFAULT;
-	}
-
-	kfifo_in(&ctx->events_fifo, &event, 1);
-	ctx->event_pending = true;
-
-	wake_up_interruptible(&ctx->cmd_wait_q);
-
-	return 0;
-}
-
 static irqreturn_t wigig_sensing_dri_isr_thread(int irq, void *cookie)
 {
 	struct wigig_sensing_ctx *ctx = cookie;
@@ -1250,7 +1227,7 @@ static irqreturn_t wigig_sensing_dri_isr_thread(int irq, void *cookie)
 			ctx->stm.spi_malfunction = false;
 			if (ctx->stm.state == WIGIG_SENSING_STATE_INITIALIZED)
 				wigig_sensing_change_state(ctx, &ctx->stm,
-					WIGIG_SENSING_STATE_READY_STOPPED);
+					WIGIG_SENSING_STATE_SPI_READY);
 		}
 
 		pr_debug("Reading SANITY register\n");
@@ -1311,16 +1288,15 @@ static irqreturn_t wigig_sensing_dri_isr_thread(int irq, void *cookie)
 		goto deassert_and_bail_out;
 	}
 	if (spi_status.b.int_fw_ready) {
-		pr_info_ratelimited("FW READY INTERRUPT\n");
+		pr_debug("FW READY INTERRUPT\n");
 		ctx->stm.fw_is_ready = true;
 		ctx->stm.channel_request = 0;
 		ctx->stm.burst_size = 0;
 		ctx->stm.mode = WIGIG_SENSING_MODE_STOP;
+		ctx->stm.enabled = true;
+
 		wigig_sensing_change_state(ctx, &ctx->stm,
 					   WIGIG_SENSING_STATE_READY_STOPPED);
-
-		/* Send asynchronous FW_READY event to application */
-		wigig_sensing_send_event(ctx, WIGIG_SENSING_EVENT_FW_READY);
 
 		spi_status.v &= ~INT_FW_READY;
 	}
@@ -1333,11 +1309,24 @@ static irqreturn_t wigig_sensing_dri_isr_thread(int irq, void *cookie)
 			pr_debug("Change mode in progress, aborting data processing\n");
 		spi_status.v &= ~INT_DATA_READY;
 	}
+	if (spi_status.b.int_sysassert) {
+		pr_debug("SYSASSERT INTERRUPT\n");
+		ctx->stm.fw_is_ready = false;
+
+		rc = wigig_sensing_change_state(ctx, &ctx->stm,
+				WIGIG_SENSING_STATE_SYS_ASSERT);
+		if (rc != 0 ||
+		    ctx->stm.state != WIGIG_SENSING_STATE_SYS_ASSERT)
+			pr_err("State change to WIGIG_SENSING_SYS_ASSERT failed\n");
+
+		ctx->stm.spi_malfunction = true;
+		spi_status.v &= ~INT_SYSASSERT;
+	}
 	if (spi_status.b.int_deep_sleep_exit ||
 	    (ctx->stm.waiting_for_deep_sleep_exit &&
 	     ctx->stm.waiting_for_deep_sleep_exit_first_pass)) {
 		if (spi_status.b.int_deep_sleep_exit)
-			pr_info_ratelimited("DEEP SLEEP EXIT INTERRUPT\n");
+			pr_debug("DEEP SLEEP EXIT INTERRUPT\n");
 
 		if (ctx->stm.waiting_for_deep_sleep_exit) {
 			additional_inb_command = ctx->inb_cmd;
@@ -1350,7 +1339,7 @@ static irqreturn_t wigig_sensing_dri_isr_thread(int irq, void *cookie)
 		spi_status.v &= ~INT_DEEP_SLEEP_EXIT;
 	}
 	if (spi_status.b.int_fifo_ready) {
-		pr_info_ratelimited("FIFO READY INTERRUPT\n");
+		pr_debug("FIFO READY INTERRUPT\n");
 		wigig_sensing_handle_fifo_ready_dri(ctx);
 
 		spi_status.v &= ~INT_FIFO_READY;
@@ -1364,7 +1353,6 @@ static irqreturn_t wigig_sensing_dri_isr_thread(int irq, void *cookie)
 		pr_err("Unexpected interrupt received, spi_status=0x%X\n",
 		       spi_status.v & CLEAR_LOW_23_BITS);
 
-deassert_and_bail_out:
 	/* Notify FW we are done with interrupt handling */
 	if (!dont_deassert || additional_inb_command.b.mode != 0) {
 		rc = wigig_sensing_deassert_dri(ctx, additional_inb_command);
@@ -1405,7 +1393,6 @@ static int wigig_sensing_probe(struct spi_device *spi)
 	init_waitqueue_head(&ctx->cmd_wait_q);
 	init_waitqueue_head(&ctx->data_wait_q);
 	ctx->stm.state = WIGIG_SENSING_STATE_INITIALIZED;
-	INIT_KFIFO(ctx->events_fifo);
 
 	/* Allocate memory for the CIRs */
 	/* Allocate a 2MB == 2^21 buffer for CIR data */
