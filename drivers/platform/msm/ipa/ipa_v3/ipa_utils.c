@@ -7996,9 +7996,10 @@ int ipa3_allocate_coal_close_frame(void)
 
 void ipa3_free_coal_close_frame(void)
 {
-	if (ipa3_ctx->coal_cmd_pyld)
-		ipahal_destroy_imm_cmd(ipa3_ctx->coal_cmd_pyld);
+       if (ipa3_ctx->coal_cmd_pyld)
+               ipahal_destroy_imm_cmd(ipa3_ctx->coal_cmd_pyld);
 }
+
 /**
  * ipa3_inject_dma_task_for_gsi()- Send DMA_TASK to IPA for GSI stop channel
  *
