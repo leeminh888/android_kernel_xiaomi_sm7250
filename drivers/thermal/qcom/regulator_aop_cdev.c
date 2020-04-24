@@ -120,9 +120,6 @@ static int reg_get_cur_state(struct thermal_cooling_device *cdev,
 static int reg_send_cur_state(struct thermal_cooling_device *cdev,
 				unsigned long state)
 {
-	if (state > REG_CDEV_MAX_STATE)
-		return -EINVAL;
-
 	return 0;
 }
 
