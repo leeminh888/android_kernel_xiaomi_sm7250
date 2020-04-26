@@ -85,7 +85,7 @@ modules.builtin
 !.mailmap
 !.cocciconfig
 !.clang-format
-
+!.github/
 #
 # Generated include files
 #
@@ -141,3 +141,4 @@ arch/arm64/boot/dts/vendor/
 
 # Tech package directories
 # techpack/
+out/
