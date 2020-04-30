@@ -9,6 +9,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       with:
+        submodules: 'true'
         path: kernel
     - name: Build With Shell
       run: |
