@@ -30,7 +30,7 @@ HOSTCFLAGS_dtc-lexer.lex.o := $(HOSTCFLAGS_DTC)
 HOSTCFLAGS_dtc-parser.tab.o := $(HOSTCFLAGS_DTC)
 
 # Dependencies on generated files need to be listed explicitly.
-$(obj)/dtc/dtc-lexer.lex.o: $(obj)/dtc/dtc-parser.h
+$(obj)/dtc/dtc-lexer.lex.o: $(obj)/dtc/dtc-parser.tab.h
 
 # The kernel's ordinary makefile doesn't have or require flex or bison,
 # and in fact, upstream chooses to just have _shipped versions of the files.
