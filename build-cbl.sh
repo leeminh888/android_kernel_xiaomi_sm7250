@@ -26,3 +26,16 @@ echo "Make defconfig"
 make ${args} picasso_user_defconfig
 echo "Make defconfig done, start Make"
 make ${args}
+
+echo "Make Done, packaging now"
+
+cp ./out/arch/arm64/boot/Image.gz-dtb ./AnyKernel3/
+cp ./out/arch/arm64/boot/dtbo.img ./AnyKernel3/
+
+
+#still needed?
+cd AnyKernel3/
+zip -r9 AnyKernel3.zip *
+mv AnyKernel3.zip ../
+
+    
