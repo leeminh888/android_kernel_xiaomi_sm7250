@@ -14,8 +14,8 @@ jobs:
     - name: Build With Shell
       run: |
         bash kernel/build-cbl.sh
-    - name : Upload artifact
+    - name : Upload zip package
       uses: actions/upload-artifact@master
       with:
-        path: kernel/out/arch/arm64/boot/
-        name: out-boot-folder
+        path: kernel/AnyKernel3
+        name: Feisty_${{ env.github_ref }}_r${{ env.github.run_id }}
