@@ -114,7 +114,7 @@ int dsi_panel_parse_mi_config(struct dsi_panel *panel,
 	mi_cfg->fod_hbm_off_time = ktime_get();
 	mi_cfg->fod_backlight_off_time = ktime_get();
 	mi_cfg->panel_dead_flag = false;
-	mi_cfg->tddi_doubleclick_flag = false;
+	mi_cfg->tddi_doubleclick_flag = true;
 
 	INIT_DELAYED_WORK(&mi_cfg->cmds_work, panelon_dimming_enable_delayed_work);
 	return rc;
