@@ -1,3 +1,4 @@
+---
 name: Build Kernel Feisty
 on:
   push
@@ -11,28 +12,25 @@ jobs:
       with:
         submodules: 'true'
         path: kernel
-    - name: Prepare ccache timestamp
-      id: ccache_cache_timestamp
-      shell: cmake -P {0}
-      run: |
-        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
+    - name: Get current timestamp
+      id: timestamp
+      run: echo "::set-output name=timestamp::$(date +%s)"
     - name: ccache
       uses: actions/cache@v1
       env:
         cache-name: ccache
       with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.ccache
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.timestamp.outputs.timestamp }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.timestamp.outputs.timestamp }}
+          ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
           ${{ runner.os }}-
     - name: Build With Shell
       run: |
         bash kernel/build-cbl.sh
-    - name : Upload zip package
+    - name: Upload zip package
       uses: actions/upload-artifact@master
       with:
         path: kernel/AnyKernel3
