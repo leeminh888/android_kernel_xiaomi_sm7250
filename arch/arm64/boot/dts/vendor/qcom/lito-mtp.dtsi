@@ -123,6 +123,7 @@
 &pm8150a_amoled {
 	status = "ok";
 };
+
 &pm7250b_vadc {
 	pinctrl-0 = <
 		&bmr_w_therm_default
@@ -223,6 +224,10 @@
 	qcom,hold-soc-while-full;
 	qcom,linearize-soc;
 	qcom,cl-feedback-on;
+	qcom,tcss-enable;
+	qcom,fvss-enable;
+	qcom,fvss-vbatt-mv = <3300>;
+	qcom,bass-enable;
 };
 
 &qupv3_se9_i2c {
