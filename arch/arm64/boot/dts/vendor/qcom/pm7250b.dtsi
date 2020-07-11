@@ -11,8 +11,8 @@
 	qcom,pm7250b@2 {
 		compatible = "qcom,spmi-pmic";
 		reg = <0x2 SPMI_USID>;
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <0>;
 
 		pm7250b_revid: qcom,revid@100 {
 			compatible = "qcom,qpnp-revid";
@@ -252,7 +252,7 @@
 		pm7250b_clkdiv: clock-controller@5b00 {
 			compatible = "qcom,spmi-clkdiv";
 			reg = <0x5b00 0x100>;
-			#clodk-cells = <1>;
+			#clock-cells = <1>;
 			qcom,num-clkdivs = <1>;
 			clock-output-names = "pm7250b_div_clk1";
 			clocks = <&rpmhcc RPMH_CXO_CLK>;
@@ -436,15 +436,14 @@
 		bcl_soc:bcl-soc {
 			compatible = "qcom,msm-bcl-soc";
 			#thermal-sensor-cells = <0>;
-			status = "disable";
 		};
 	};
 
 	qcom,pm7250b@3 {
 		compatible = "qcom,spmi-pmic";
 		reg = <0x3 SPMI_USID>;
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <0>;
 
 		pm7250b_vib: qcom,vibrator@5300 {
 			compatible = "qcom,qpnp-vibrator-ldo";

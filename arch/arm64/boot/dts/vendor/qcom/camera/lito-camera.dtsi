@@ -387,7 +387,7 @@
 			label = "icp";
 			qcom,iommu-faults = "non-fatal";
 			qcom,iommu-dma-addr-pool = <0x10c00000 0xee300000>;
-			iova-region-discard = <0xdff00000 0xe0200000>;
+			iova-region-discard = <0xdff00000 0x300000>;
 			icp_iova_mem_map: iova-mem-map {
 				iova-mem-region-firmware {
 					/* Firmware region is 5MB */
@@ -422,7 +422,7 @@
 					iova-region-start = <0x10c00000>;
 					iova-region-len = <0xee300000>;
 					iova-region-id = <0x3>;
-					iova-region-discard = <0xdff00000 0xe0200000>;
+					iova-region-discard = <0xdff00000 0x300000>;
 					status = "ok";
 				};
 

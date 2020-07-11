@@ -31,6 +31,11 @@
 			opp-microvolt = <RPMH_REGULATOR_LEVEL_NOM_L1>;
 		};
 
+		opp-670000000 {
+			opp-hz = /bits/ 64 <670000000>;
+			opp-microvolt = <RPMH_REGULATOR_LEVEL_NOM_L1>;
+		};
+
 		opp-625000000 {
 			opp-hz = /bits/ 64 <625000000>;
 			opp-microvolt = <RPMH_REGULATOR_LEVEL_NOM>;
@@ -85,6 +90,7 @@
 
 		qcom,tsens-name = "tsens_tz_sensor12";
 		#cooling-cells = <2>;
+		qcom,tzone-name = "gpuss-max-step";
 
 		/* CPU latency parameter */
 		qcom,pm-qos-active-latency = <67>;
@@ -134,8 +140,8 @@
 		vddcx-supply = <&gpu_cx_gdsc>;
 		vdd-supply = <&gpu_gx_gdsc>;
 
-		nvmem-cells = <&gpu_speed_bin>, <&gpu_gaming_bin>;
-		nvmem-cell-names = "speed_bin", "gaming_bin";
+		nvmem-cells = <&gpu_speed_bin>, <&gpu_gaming_bin>, <&gpu_lm_efuse>;
+		nvmem-cell-names = "speed_bin", "gaming_bin", "isense_slope";
 
 		/* GPU OPP data */
 		operating-points-v2 = <&gpu_opp_table>;
