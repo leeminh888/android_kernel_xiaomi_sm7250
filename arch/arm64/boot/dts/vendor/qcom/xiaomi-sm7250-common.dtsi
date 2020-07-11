@@ -292,14 +292,6 @@
 		no-map;
 		label = "disp_rdump_region";
 	};
-
-    ramoops: ramoops@0xa2500000 {
-               compatible = "ramoops";
-               reg = <0 0xa2500000 0 0x800000>;
-               console-size = <0x400000>;
-               pmsg-size = <0x400000>;
-   };
-
 };
 
 &qupv3_se0_i2c {
