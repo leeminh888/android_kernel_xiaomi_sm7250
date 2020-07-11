@@ -109,6 +109,7 @@
 
 		qcom,gpubw-dev = <&gpubw>;
 		qcom,bus-control;
+		qcom,unmap_fast;
 		qcom,msm-bus,name = "grp3d";
 		qcom,bus-width = <32>;
 		qcom,msm-bus,num-cases = <13>;
