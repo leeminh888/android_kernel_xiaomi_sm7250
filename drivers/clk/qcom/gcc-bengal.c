@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2019, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 #define pr_fmt(fmt) "clk: %s: " fmt, __func__
@@ -2530,6 +2531,34 @@ static struct clk_branch gcc_cpuss_gnoc_clk = {
 	},
 };
 
+static struct clk_branch gcc_cpuss_throttle_core_clk = {
+	.halt_reg = 0x2b180,
+	.halt_check = BRANCH_HALT_VOTED,
+	.hwcg_reg = 0x2b180,
+	.hwcg_bit = 1,
+	.clkr = {
+		.enable_reg = 0x79004,
+		.enable_mask = BIT(30),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_cpuss_throttle_core_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_cpuss_throttle_xo_clk = {
+	.halt_reg = 0x2b17c,
+	.halt_check = BRANCH_HALT,
+	.clkr = {
+		.enable_reg = 0x2b17c,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_cpuss_throttle_xo_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
 static struct clk_branch gcc_disp_ahb_clk = {
 	.halt_reg = 0x1700c,
 	.halt_check = BRANCH_HALT,
@@ -2739,7 +2768,7 @@ static struct clk_branch gcc_gpu_iref_clk = {
 
 static struct clk_branch gcc_gpu_memnoc_gfx_clk = {
 	.halt_reg = 0x3600c,
-	.halt_check = BRANCH_VOTED,
+	.halt_check = BRANCH_HALT,
 	.hwcg_reg = 0x3600c,
 	.hwcg_bit = 1,
 	.clkr = {
@@ -2879,6 +2908,21 @@ static struct clk_branch gcc_qmip_camera_rt_ahb_clk = {
 		.enable_mask = BIT(2),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_qmip_camera_rt_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_qmip_cpuss_cfg_ahb_clk = {
+	.halt_reg = 0x2b178,
+	.halt_check = BRANCH_HALT_VOTED,
+	.hwcg_reg = 0x2b178,
+	.hwcg_bit = 1,
+	.clkr = {
+		.enable_reg = 0x79004,
+		.enable_mask = BIT(18),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_qmip_cpuss_cfg_ahb_clk",
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -3651,6 +3695,8 @@ static struct clk_regmap *gcc_bengal_clocks[] = {
 	[GCC_CAMSS_TOP_AHB_CLK_SRC] = &gcc_camss_top_ahb_clk_src.clkr,
 	[GCC_CFG_NOC_USB3_PRIM_AXI_CLK] = &gcc_cfg_noc_usb3_prim_axi_clk.clkr,
 	[GCC_CPUSS_GNOC_CLK] = &gcc_cpuss_gnoc_clk.clkr,
+	[GCC_CPUSS_THROTTLE_CORE_CLK] = &gcc_cpuss_throttle_core_clk.clkr,
+	[GCC_CPUSS_THROTTLE_XO_CLK] = &gcc_cpuss_throttle_xo_clk.clkr,
 	[GCC_DISP_AHB_CLK] = &gcc_disp_ahb_clk.clkr,
 	[GCC_DISP_GPLL0_CLK_SRC] = &gcc_disp_gpll0_clk_src.clkr,
 	[GCC_DISP_GPLL0_DIV_CLK_SRC] = &gcc_disp_gpll0_div_clk_src.clkr,
@@ -3678,6 +3724,7 @@ static struct clk_regmap *gcc_bengal_clocks[] = {
 	[GCC_PRNG_AHB_CLK] = &gcc_prng_ahb_clk.clkr,
 	[GCC_QMIP_CAMERA_NRT_AHB_CLK] = &gcc_qmip_camera_nrt_ahb_clk.clkr,
 	[GCC_QMIP_CAMERA_RT_AHB_CLK] = &gcc_qmip_camera_rt_ahb_clk.clkr,
+	[GCC_QMIP_CPUSS_CFG_AHB_CLK] = &gcc_qmip_cpuss_cfg_ahb_clk.clkr,
 	[GCC_QMIP_DISP_AHB_CLK] = &gcc_qmip_disp_ahb_clk.clkr,
 	[GCC_QMIP_GPU_CFG_AHB_CLK] = &gcc_qmip_gpu_cfg_ahb_clk.clkr,
 	[GCC_QMIP_VIDEO_VCODEC_AHB_CLK] = &gcc_qmip_video_vcodec_ahb_clk.clkr,
