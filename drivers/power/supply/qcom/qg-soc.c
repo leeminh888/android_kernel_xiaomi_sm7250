@@ -94,7 +94,7 @@ static ssize_t fvss_delta_soc_interval_ms_store(struct device *dev,
 }
 DEVICE_ATTR_RW(fvss_delta_soc_interval_ms);
 
-static int qg_delta_soc_cold_interval_ms = 25000;
+static int qg_delta_soc_cold_interval_ms = 4000;
 static ssize_t soc_cold_interval_ms_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -248,18 +248,8 @@ static int qg_process_tcss_soc(struct qpnp_qg *chip, int sys_soc)
 	if (chip->sys_soc >= QG_MAX_SOC && chip->soc_tcss >= QG_MAX_SOC)
 		goto exit_soc_scale;
 
-	rc = power_supply_get_property(chip->batt_psy, POWER_SUPPLY_PROP_STATUS, &prop);
-	if (rc < 0) {
-		pr_err("failed to get charge_status, rc = %d\n", rc);
-		goto exit_soc_scale;
-	} else if (prop.intval != POWER_SUPPLY_STATUS_CHARGING) {
-		pr_err("charge_status is not charging, rc = %d\n", rc);
-		goto exit_soc_scale;
-	}
-
 	rc = power_supply_get_property(chip->batt_psy,
 			POWER_SUPPLY_PROP_HEALTH, &prop);
-
 	if (!rc && (prop.intval == POWER_SUPPLY_HEALTH_COOL ||
 			prop.intval == POWER_SUPPLY_HEALTH_WARM))
 		goto exit_soc_scale;
@@ -268,16 +258,6 @@ static int qg_process_tcss_soc(struct qpnp_qg *chip, int sys_soc)
 		goto exit_soc_scale;
 	else if (++chip->tcss_entry_count < TCSS_ENTRY_COUNT)
 		goto skip_entry_count;
-
-	if (!(chip->qg_psy))
-		goto exit_soc_scale;
-
-	rc = power_supply_get_property(chip->qg_psy,
-			POWER_SUPPLY_PROP_BATT_FULL_CURRENT, &prop);
-	if (rc < 0)
-		goto exit_soc_scale;
-
-	qg_iterm_ua = (-1 * prop.intval);
 
 	if (!chip->tcss_active) {
 		chip->soc_tcss = sys_soc;
@@ -407,6 +387,12 @@ int qg_adjust_sys_soc(struct qpnp_qg *chip)
 
 	if (chip->sys_soc == QG_MAX_SOC) {
 		soc = FULL_SOC;
+	} else if (chip->sys_soc >= (QG_MAX_SOC - 100)) {
+		/* Hold SOC to 100% if we are dropping from 100 to 99 */
+		if (chip->last_adj_ssoc == FULL_SOC)
+			soc = FULL_SOC;
+		else /* Hold SOC at 99% until we hit 100% */
+			soc = FULL_SOC - 1;
 	} else {
 		soc = DIV_ROUND_CLOSEST(chip->sys_soc, 100);
 	}
@@ -534,13 +520,8 @@ static bool maint_soc_timeout(struct qpnp_qg *chip)
 
 static void update_msoc(struct qpnp_qg *chip)
 {
-	int rc = 0, sdam_soc, batt_temp = 0, batt_cur = 0;
+	int rc = 0, sdam_soc, batt_temp = 0;
 	bool input_present = is_input_present(chip);
-
-	rc = qg_get_battery_current(chip, &batt_cur);
-	if (rc < 0) {
-		pr_err("Failed to read BATT_CUR rc=%d\n", rc);
-	}
 
 	if (chip->catch_up_soc > chip->msoc) {
 		/* SOC increased */
@@ -548,8 +529,7 @@ static void update_msoc(struct qpnp_qg *chip)
 			chip->msoc += chip->dt.delta_soc;
 	} else if (chip->catch_up_soc < chip->msoc) {
 		/* SOC dropped */
-		if (batt_cur > 0)
-			chip->msoc -= chip->dt.delta_soc;
+		chip->msoc -= chip->dt.delta_soc;
 	}
 	chip->msoc = CAP(0, 100, chip->msoc);
 
