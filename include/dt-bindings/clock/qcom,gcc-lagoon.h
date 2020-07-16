@@ -165,7 +165,5 @@
 #define GCC_PCIE_0_PHY_BCR			7
 #define GCC_QUPV3_WRAPPER_0_BCR			8
 #define GCC_QUPV3_WRAPPER_1_BCR			9
-#define GCC_USB3_PHY_PRIM_BCR			10
-#define GCC_USB3_DP_PHY_PRIM_BCR		11
 
 #endif
