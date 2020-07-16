@@ -1486,7 +1486,7 @@ static void _tmc_disable_etr_sink(struct coresight_device *csdev, bool flush)
 					flags);
 				usb_qdss_close(drvdata->usbch);
 				spin_lock_irqsave(&drvdata->spinlock, flags);
-				tmc_etr_disable_hw(drvdata);
+				tmc_etr_disable_hw(drvdata, flush);
 			}
 		} else {
 			tmc_etr_disable_hw(drvdata, flush);
