@@ -106,6 +106,8 @@ struct geni_i2c_dev {
 	int clk_fld_idx;
 	struct dma_chan *tx_c;
 	struct dma_chan *rx_c;
+    struct msm_gpi_tre lock_t;
+    struct msm_gpi_tre unlock_t;
 	struct msm_gpi_tre cfg0_t;
 	struct msm_gpi_tre go_t;
 	struct msm_gpi_tre tx_t;
