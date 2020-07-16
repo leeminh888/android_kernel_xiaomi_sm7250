@@ -43,7 +43,7 @@
 #define for_each_related_thread_group(grp) \
 	list_for_each_entry(grp, &active_related_thread_groups, list)
 
-#define SCHED_NEW_TASK_WINDOWS 5
+#define NEW_TASK_ACTIVE_TIME 100000000
 
 extern unsigned int sched_ravg_window;
 extern unsigned int new_sched_ravg_window;
@@ -59,8 +59,6 @@ extern __read_mostly unsigned int sched_ravg_hist_size;
 extern __read_mostly unsigned int sched_freq_aggregate;
 extern __read_mostly unsigned int sched_group_upmigrate;
 extern __read_mostly unsigned int sched_group_downmigrate;
-
-extern struct sched_cluster init_cluster;
 
 extern void update_task_ravg(struct task_struct *p, struct rq *rq, int event,
 						u64 wallclock, u64 irqtime);
@@ -211,7 +209,7 @@ scale_load_to_freq(u64 load, unsigned int src_freq, unsigned int dst_freq)
 
 static inline bool is_new_task(struct task_struct *p)
 {
-	return p->ravg.active_windows < SCHED_NEW_TASK_WINDOWS;
+	return p->ravg.active_time < NEW_TASK_ACTIVE_TIME;
 }
 
 static inline void clear_top_tasks_table(u8 *table)
