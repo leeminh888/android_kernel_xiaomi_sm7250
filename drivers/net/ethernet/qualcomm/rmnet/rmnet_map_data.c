@@ -1411,7 +1411,7 @@ new_packet:
 	memcpy(&last, &port->agg_last, sizeof(struct timespec));
 	getnstimeofday(&port->agg_last);
 
-	if ((port->data_format & RMNET_EGRESS_FORMAT_PRIORITY) &&
+	if ((port->data_format) &&
 	    skb->priority) {
 		/* Send out any aggregated SKBs we have */
 		rmnet_map_send_agg_skb(port, flags);
