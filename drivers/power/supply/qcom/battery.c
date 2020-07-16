@@ -191,6 +191,34 @@ static int cp_get_parallel_mode(struct pl_data *chip, int mode)
 	return pval.intval;
 }
 
+static int get_hvdcp3_icl_limit(struct pl_data *chip)
+{
+       int rc, main_icl, target_icl = -EINVAL;
+       union power_supply_propval pval = {0, };
+
+       rc = power_supply_get_property(chip->usb_psy,
+                               POWER_SUPPLY_PROP_REAL_TYPE, &pval);
+       if ((rc < 0) || (pval.intval != POWER_SUPPLY_TYPE_USB_HVDCP_3))
+               return target_icl;
+
+       /*
+        * For HVDCP3 adapters, limit max. ILIM as follows:
+        * HVDCP3_ICL: Maximum ICL of HVDCP3 adapter(from DT configuration)
+        * For Parallel input configurations:
+        * VBUS: target_icl = HVDCP3_ICL - main_ICL
+        * VMID: target_icl = HVDCP3_ICL
+        */
+       target_icl = chip->chg_param->hvdcp3_max_icl_ua;
+       if (cp_get_parallel_mode(chip, PARALLEL_INPUT_MODE)
+                                       == POWER_SUPPLY_PL_USBIN_USBIN) {
+               main_icl = get_effective_result_locked(chip->usb_icl_votable);
+               if ((main_icl >= 0) && (main_icl < target_icl))
+                       target_icl -= main_icl;
+       }
+
+       return target_icl;
+}
+
 static int get_adapter_icl_based_ilim(struct pl_data *chip)
 {
 	int main_icl, adapter_icl = -EINVAL, rc = -EINVAL, final_icl = -EINVAL;
@@ -788,8 +816,7 @@ static void get_fcc_stepper_params(struct pl_data *chip, int main_fcc_ua,
 		 */
 		parallel_fcc_ua = (target_icl > 0) ?
 				min(target_icl, total_fcc_ua) : total_fcc_ua;
-	}
-
+	
 	/* Skip stepping if override vote is applied on CP */
 	if (chip->cp_ilim_votable
 		&& is_override_vote_enabled(chip->cp_ilim_votable)) {
