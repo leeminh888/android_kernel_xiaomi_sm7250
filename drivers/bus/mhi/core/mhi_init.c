@@ -1528,7 +1528,6 @@ int of_register_mhi_controller(struct mhi_controller *mhi_cntrl)
 	struct mhi_chan *mhi_chan;
 	struct mhi_cmd *mhi_cmd;
 	struct mhi_device *mhi_dev;
-	struct mhi_sfr_info *sfr_info;
 	u32 soc_info;
 
 	if (!mhi_cntrl->of_node)
