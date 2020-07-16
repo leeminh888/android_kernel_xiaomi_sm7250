@@ -106,8 +106,6 @@ struct geni_i2c_dev {
 	int clk_fld_idx;
 	struct dma_chan *tx_c;
 	struct dma_chan *rx_c;
-	struct msm_gpi_tre lock_t;
-	struct msm_gpi_tre unlock_t;
 	struct msm_gpi_tre cfg0_t;
 	struct msm_gpi_tre go_t;
 	struct msm_gpi_tre tx_t;
@@ -524,10 +522,7 @@ static int geni_i2c_gsi_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 		}
 
 		qcom_geni_i2c_calc_timeout(gi2c);
-
-		if (!gi2c->cfg_sent)
-			segs++;
-		if (gi2c->is_shared && (i == 0 || i == num-1)) {
+		if (!gi2c->cfg_sent) {
 			segs++;
 			if (num == 1)
 				segs++;
@@ -545,6 +540,9 @@ static int geni_i2c_gsi_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 			sg_set_buf(&gi2c->tx_sg[index++], &gi2c->cfg0_t,
 						sizeof(gi2c->cfg0_t));
 			gi2c->cfg_sent = 1;
+			index++;
+		} else {
+			sg_init_table(gi2c->tx_sg, segs);
 		}
 
 		go_t->dword[0] = MSM_GPI_I2C_GO_TRE_DWORD0((stretch << 2),
@@ -765,9 +763,6 @@ static int geni_i2c_xfer(struct i2c_adapter *adap,
 	if (gi2c->se_mode == GSI_ONLY) {
 		ret = geni_i2c_gsi_xfer(adap, msgs, num);
 		goto geni_i2c_txn_ret;
-	} else {
-		/* Don't set shared flag in non-GSI mode */
-		gi2c->is_shared = false;
 	}
 
 	for (i = 0; i < num; i++) {
@@ -1128,7 +1123,7 @@ static int geni_i2c_runtime_resume(struct device *dev)
 	if (!gi2c->ipcl) {
 		char ipc_name[I2C_NAME_SIZE];
 
-		snprintf(ipc_name, I2C_NAME_SIZE, "%s", dev_name(gi2c->dev));
+		snprintf(ipc_name, I2C_NAME_SIZE, "i2c-%d", gi2c->adap.nr);
 		gi2c->ipcl = ipc_log_context_create(2, ipc_name, 0);
 	}
 

@@ -448,8 +448,7 @@ struct gpi_dev {
 	struct dentry *dentry;
 };
 
-static struct gpi_dev *gpi_dev_dbg[5];
-static int arr_idx;
+static struct gpi_dev *gpi_dev_dbg;
 
 struct reg_info {
 	char *name;
@@ -1517,6 +1516,20 @@ static void gpi_process_imed_data_event(struct gpii_chan *gpii_chan,
 		return;
 	}
 	gpi_desc = to_gpi_desc(vd);
+
+	/* Event TR RP gen. don't match descriptor TR */
+	if (gpi_desc->wp != tre) {
+		spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
+		GPII_ERR(gpii, gpii_chan->chid,
+			 "EOT/EOB received for wrong TRE 0x%0llx != 0x%0llx\n",
+			 to_physical(ch_ring, gpi_desc->wp),
+			 to_physical(ch_ring, tre));
+		gpi_generate_cb_event(gpii_chan, MSM_GPI_QUP_EOT_DESC_MISMATCH,
+				      __LINE__);
+		return;
+	}
+
+	list_del(&vd->node);
 	spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
 
 
@@ -1623,6 +1636,20 @@ static void gpi_process_xfer_compl_event(struct gpii_chan *gpii_chan,
 	}
 
 	gpi_desc = to_gpi_desc(vd);
+
+	/* TRE Event generated didn't match descriptor's TRE */
+	if (gpi_desc->wp != ev_rp) {
+		spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
+		GPII_ERR(gpii, gpii_chan->chid,
+			 "EOT\EOB received for wrong TRE 0x%0llx != 0x%0llx\n",
+			 to_physical(ch_ring, gpi_desc->wp),
+			 to_physical(ch_ring, ev_rp));
+		gpi_generate_cb_event(gpii_chan, MSM_GPI_QUP_EOT_DESC_MISMATCH,
+				      __LINE__);
+		return;
+	}
+
+	list_del(&vd->node);
 	spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
 
 
@@ -2361,7 +2388,6 @@ void gpi_desc_free(struct virt_dma_desc *vd)
 	struct gpi_desc *gpi_desc = to_gpi_desc(vd);
 
 	kfree(gpi_desc);
-	gpi_desc = NULL;
 }
 
 /* copy tre into transfer ring */
@@ -2416,21 +2442,10 @@ struct dma_async_tx_descriptor *gpi_prep_slave_sg(struct dma_chan *chan,
 	}
 
 	/* copy each tre into transfer ring */
-	for_each_sg(sgl, sg, sg_len, i) {
-		tre = sg_virt(sg);
-
-		/* Check if last tre is an unlock tre */
-		if (i == sg_len - 1) {
-			tre_type =
-			MSM_GPI_TRE_TYPE(((struct msm_gpi_tre *)tre));
-			gpii->unlock_tre_set =
-			tre_type == MSM_GPI_TRE_UNLOCK ? true : false;
-		}
-
-		for (j = 0; j < sg->length;
+	for_each_sg(sgl, sg, sg_len, i)
+		for (j = 0, tre = sg_virt(sg); j < sg->length;
 		     j += ch_ring->el_size, tre += ch_ring->el_size)
 			gpi_queue_xfer(gpii, gpii_chan, tre, &wp);
-	}
 
 	/* set up the descriptor */
 	gpi_desc->db = ch_ring->wp;
@@ -2882,8 +2897,7 @@ static int gpi_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	/* debug purpose */
-	gpi_dev_dbg[arr_idx] = gpi_dev;
-	arr_idx++;
+	gpi_dev_dbg = gpi_dev;
 
 	gpi_dev->dev = &pdev->dev;
 	gpi_dev->klog_lvl = DEFAULT_KLOG_LVL;

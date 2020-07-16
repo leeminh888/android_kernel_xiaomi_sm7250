@@ -111,7 +111,7 @@
 #define UART_CONSOLE_CORE2X_VOTE (960)
 
 #define WAKEBYTE_TIMEOUT_MSEC	(2000)
-#define WAIT_XFER_MAX_ITER	(2)
+#define WAIT_XFER_MAX_ITER	(50)
 #define WAIT_XFER_MAX_TIMEOUT_US	(10000)
 #define WAIT_XFER_MIN_TIMEOUT_US	(9000)
 #define IPC_LOG_PWR_PAGES	(6)
@@ -227,8 +227,6 @@ static void msm_geni_serial_stop_rx(struct uart_port *uport);
 static int msm_geni_serial_runtime_resume(struct device *dev);
 static int msm_geni_serial_runtime_suspend(struct device *dev);
 static int msm_geni_serial_get_ver_info(struct uart_port *uport);
-static void msm_geni_serial_set_manual_flow(bool enable,
-				struct msm_geni_serial_port *port);
 static int uart_line_id;
 
 #define GET_DEV_PORT(uport) \
@@ -2799,10 +2797,24 @@ OF_EARLYCON_DECLARE(msm_geni_serial, "qcom,msm-geni-console",
 
 static int console_register(struct uart_driver *drv)
 {
+#ifdef CONFIG_FASTBOOT_CMD_CTRL_UART
+	if (!is_early_cons_enabled) {
+		pr_info("ignore console register\n");
+		return 0;
+	}
+#endif
+
 	return uart_register_driver(drv);
 }
 static void console_unregister(struct uart_driver *drv)
 {
+#ifdef CONFIG_FASTBOOT_CMD_CTRL_UART
+	if (!is_early_cons_enabled) {
+		pr_info("ignore console unregister\n");
+		return;
+	}
+#endif
+
 	uart_unregister_driver(drv);
 }
 
@@ -3023,6 +3035,16 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 								__func__);
 		return -ENODEV;
 	}
+
+#ifdef CONFIG_FASTBOOT_CMD_CTRL_UART
+	/*if earlycon is not enabled, we should ignore console
+	  driver prob*/
+	if (!is_early_cons_enabled &&
+		(!strcmp(id->compatible, "qcom,msm-geni-console"))) {
+		pr_info("ignore cons prob\n");
+		return -ENODEV;
+	}
+#endif
 
 	if (pdev->dev.of_node) {
 		if (drv->cons) {

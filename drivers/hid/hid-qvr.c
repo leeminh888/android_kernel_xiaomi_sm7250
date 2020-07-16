@@ -245,6 +245,7 @@ static int control_imu_stream(bool status)
 	return -ETIME;
 }
 
+
 static int qvr_send_package_wrap(u8 *message, int msize, struct hid_device *hid)
 {
 	struct qvr_external_sensor *sensor = &qvr_external_sensor;
