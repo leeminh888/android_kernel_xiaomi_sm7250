@@ -13,7 +13,6 @@
 #include <linux/slab.h>
 #include <linux/thermal.h>
 #include "tsens.h"
-#include "thermal_core.h"
 #include "qcom/qti_virtual_sensor.h"
 
 LIST_HEAD(tsens_device_list);
