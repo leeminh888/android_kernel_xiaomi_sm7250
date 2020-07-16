@@ -888,8 +888,10 @@ static void uaudio_disconnect_cb(struct snd_usb_audio *chip)
 				QMI_UAUDIO_STREAM_IND_MSG_V01_MAX_MSG_LEN,
 				qmi_uaudio_stream_ind_msg_v01_ei,
 				&disconnect_ind);
-		if (ret < 0)
-			uaudio_err("qmi send failed with err: %d\n", ret);
+		if (ret < 0) {
+			uaudio_err("qmi send failed wiht err: %d\n", ret);
+			return;
+		}
 
 		ret = wait_event_interruptible_timeout(dev->disconnect_wq,
 				!atomic_read(&dev->in_use),
