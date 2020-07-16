@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 #define pr_fmt(fmt) "%s:%s " fmt, KBUILD_MODNAME, __func__
@@ -89,7 +88,7 @@ static int cxip_lm_set_cur_state(struct thermal_cooling_device *cdev,
 	int ret = 0;
 
 	if (state > CXIP_LM_CDEV_MAX_STATE)
-		state = CXIP_LM_CDEV_MAX_STATE;
+		return -EINVAL;
 
 	if (cxip_dev->state == state)
 		return 0;

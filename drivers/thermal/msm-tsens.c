@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/thermal.h>
 #include "tsens.h"
+#include "thermal_core.h"
 #include "qcom/qti_virtual_sensor.h"
 
 LIST_HEAD(tsens_device_list);
@@ -199,6 +200,8 @@ static int get_device_tree_data(struct platform_device *pdev,
 	else
 		tmdev->min_temp_sensor_id = MIN_TEMP_DEF_OFFSET;
 
+	tmdev->tsens_reinit_wa =
+		of_property_read_bool(of_node, "tsens-reinit-wa");
 	return rc;
 }
 
@@ -314,6 +317,16 @@ int tsens_tm_probe(struct platform_device *pdev)
 		return rc;
 	}
 
+	snprintf(tsens_name, sizeof(tsens_name), "tsens_wq_%pa",
+		&tmdev->phys_addr_tm);
+
+	tmdev->tsens_reinit_work = alloc_workqueue(tsens_name,
+		WQ_HIGHPRI, 0);
+	if (!tmdev->tsens_reinit_work) {
+		rc = -ENOMEM;
+		return rc;
+	}
+	INIT_WORK(&tmdev->therm_fwk_notify, tsens_therm_fwk_notify);
 	rc = tsens_thermal_zone_register(tmdev);
 	if (rc) {
 		pr_err("Error registering the thermal zone\n");

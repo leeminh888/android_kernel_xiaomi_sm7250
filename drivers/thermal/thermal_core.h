@@ -3,7 +3,6 @@
  *  thermal_core.h
  *
  *  Copyright (C) 2012  Intel Corp
- *  Copyright (C) 2020 XiaoMi, Inc.
  *  Author: Durgadoss R <durgadoss.r@intel.com>
  */
 
@@ -13,9 +12,6 @@
 #include <linux/device.h>
 #include <linux/thermal.h>
 
-#ifdef CONFIG_DRM
-#include <drm/drm_notifier_mi.h>
-#endif
 /* Initial state of a cooling device during binding */
 #define THERMAL_NO_TARGET -1UL
 
@@ -45,11 +41,6 @@ struct thermal_instance {
 	struct list_head tz_node; /* node in tz->thermal_instances */
 	struct list_head cdev_node; /* node in cdev->thermal_instances */
 	unsigned int weight; /* The weight of the cooling device */
-};
-
-struct msm_drm_notifier {
-	enum msm_drm_display_id id;
-	void *data;
 };
 
 #define to_thermal_zone(_dev) \

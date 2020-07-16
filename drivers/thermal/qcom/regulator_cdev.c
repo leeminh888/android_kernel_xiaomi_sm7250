@@ -92,6 +92,11 @@ static int reg_get_cur_state(struct thermal_cooling_device *cdev,
 static int reg_set_cur_state(struct thermal_cooling_device *cdev,
 				 unsigned long state)
 {
+	struct reg_cooling_device *reg_dev = cdev->devdata;
+
+	if (state > reg_dev->lvl_ct)
+		return -EINVAL;
+
 	/* regulator cooling device doesn't support voltage ceil */
 	return 0;
 }

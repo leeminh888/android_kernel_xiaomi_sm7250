@@ -11,6 +11,7 @@
 #include <linux/vmalloc.h>
 #include "tsens.h"
 #include "thermal_core.h"
+#include <soc/qcom/scm.h>
 
 #define TSENS_DRIVER_NAME			"msm-tsens"
 
@@ -142,8 +143,8 @@ static int __tsens2xxx_hw_init(struct tsens_device *tmdev)
 
 static int tsens2xxx_get_temp(struct tsens_sensor *sensor, int *temp)
 {
-	struct tsens_device *tmdev = NULL;
-	unsigned int code;
+	struct tsens_device *tmdev = NULL, *tmdev_itr;
+	unsigned int code, ret, tsens_ret;
 	void __iomem *sensor_addr, *trdy;
 	int rc = 0, last_temp = 0, last_temp2 = 0, last_temp3 = 0, count = 0;
 	static atomic_t in_tsens_reinit;
@@ -156,6 +157,7 @@ static int tsens2xxx_get_temp(struct tsens_sensor *sensor, int *temp)
 	trdy = TSENS_TM_TRDY(tmdev->tsens_tm_addr);
 
 	code = readl_relaxed_no_log(trdy);
+
 	if (!((code & TSENS_TM_TRDY_FIRST_ROUND_COMPLETE) >>
 			TSENS_TM_TRDY_FIRST_ROUND_COMPLETE_SHIFT)) {
 		if (atomic_read(&in_tsens_reinit)) {
@@ -243,9 +245,10 @@ static int tsens2xxx_get_temp(struct tsens_sensor *sensor, int *temp)
 			pr_err("%s: tsens controller got reset\n", __func__);
 			BUG();
 		}
-
-		return -ENODATA;
+		return -EAGAIN;
 	}
+
+sensor_read:
 
 	tmdev->trdy_fail_ctr = 0;
 	tmdev->tsens_reinit_cnt = 0;

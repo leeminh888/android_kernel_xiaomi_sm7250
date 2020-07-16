@@ -274,7 +274,7 @@ static int qmi_set_cur_state(struct thermal_cooling_device *cdev,
 		return 0;
 
 	if (state > qmi_cdev->max_level)
-		state = qmi_cdev->max_level;
+		return -EINVAL;
 
 	return qmi_set_cur_or_min_state(qmi_cdev, state);
 }
