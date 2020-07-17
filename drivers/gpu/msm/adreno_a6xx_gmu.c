@@ -1714,6 +1714,32 @@ static int a6xx_gmu_wait_for_active_transition(
 	return -ETIMEDOUT;
 }
 
+/*
+ * a6xx_gmu_read_ao_counter() - Returns the 64bit always on counter value
+ *
+ * @device: Pointer to KGSL device
+ */
+u64 a6xx_gmu_read_ao_counter(struct kgsl_device *device)
+{
+       unsigned int l, h, h1;
+
+       gmu_core_regread(device, A6XX_GMU_CX_GMU_ALWAYS_ON_COUNTER_H, &h);
+       gmu_core_regread(device, A6XX_GMU_CX_GMU_ALWAYS_ON_COUNTER_L, &l);
+       gmu_core_regread(device, A6XX_GMU_CX_GMU_ALWAYS_ON_COUNTER_H, &h1);
+
+       /*
+        * If there's no change in COUNTER_H we have no overflow so return,
+        * otherwise read COUNTER_L again
+        */
+
+       if (h == h1)
+               return (uint64_t) l | ((uint64_t) h << 32);
+
+       gmu_core_regread(device, A6XX_GMU_CX_GMU_ALWAYS_ON_COUNTER_L, &l);
+       return (uint64_t) l | ((uint64_t) h1 << 32);
+}
+
+
 struct gmu_dev_ops adreno_a6xx_gmudev = {
 	.load_firmware = a6xx_gmu_load_firmware,
 	.oob_set = a6xx_gmu_oob_set,
@@ -1732,6 +1758,7 @@ struct gmu_dev_ops adreno_a6xx_gmudev = {
 	.snapshot = a6xx_gmu_snapshot,
 	.cooperative_reset = a6xx_gmu_cooperative_reset,
 	.wait_for_active_transition = a6xx_gmu_wait_for_active_transition,
+	.read_ao_counter = a6xx_gmu_read_ao_counter,
 	.gmu2host_intr_mask = HFI_IRQ_MASK,
 	.gmu_ao_intr_mask = GMU_AO_INT_MASK,
 };

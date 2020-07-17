@@ -10,6 +10,7 @@
 #include <linux/of_fdt.h>
 #include <linux/module.h>
 #include <linux/msm_kgsl.h>
+#include <linux/msm-bus.h>
 #include <linux/regulator/consumer.h>
 #include <linux/nvmem-consumer.h>
 #include <soc/qcom/scm.h>

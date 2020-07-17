@@ -165,7 +165,8 @@ struct kgsl_mmu {
 		struct kgsl_iommu iommu;
 	} priv;
 };
-
+/* KGSL MMU FLAGS */
+#define KGSL_MMU_STARTED BIT(0)
 #define KGSL_IOMMU_PRIV(_device) (&((_device)->mmu.priv.iommu))
 
 extern struct kgsl_mmu_ops kgsl_iommu_ops;

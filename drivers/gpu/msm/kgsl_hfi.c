@@ -265,6 +265,8 @@ static int poll_adreno_gmu_reg(struct adreno_device *adreno_dev,
 	unsigned int mask, unsigned int timeout_ms)
 {
 	unsigned int val;
+	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
+ 	struct gmu_device *gmu = KGSL_GMU_DEVICE(device);
 	unsigned long timeout = jiffies + msecs_to_jiffies(timeout_ms);
 	u64 ts1, ts2;
 
