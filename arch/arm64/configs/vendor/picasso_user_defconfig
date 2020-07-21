@@ -765,4 +765,6 @@ CONFIG_MSM_CSPL=y
 # Rmnet
 CONFIG_RMNET_PERF=y
 CONFIG_RMNET_SHS=y
->>>>>>> dad78b6e62... drivers: rmnet: build module inside kernel
+
+# QCACLD
+CONFIG_QCA_CLD_WLAN=y
