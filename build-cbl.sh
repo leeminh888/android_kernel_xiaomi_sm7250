@@ -5,11 +5,13 @@ echo "deb http://archive.ubuntu.com/ubuntu eoan main" | sudo tee /etc/apt/source
 sudo apt-get update
 sudo apt-get -y --no-install-recommends install bison flex libc6 libstdc++6 ccache libfl-dev
 
-mkdir -p $GITHUB_WORKSPACE/TC
-cd $GITHUB_WORKSPACE/TC
-wget 'https://github.com/kdrag0n/proton-clang-build/releases/download/20200117/proton_clang-11.0.0-20200117.tar.zst'
-tar -I zstd -xf proton_clang-11.0.0-20200117.tar.zst
-mv proton_clang-11.0.0-20200117/* ./
+git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86  --depth=1 TC
+
+mkdir -p $GITHUB_WORKSPACE/gcc
+cd $GITHUB_WORKSPACE/gcc
+wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/a9b70fc1b59747d1334677e539b2ef4c752a59a1.tar.gz -O gcc.tar.gz
+tar -xf gcc.tar.gz
+
 echo "unarchived!"
 
 
@@ -19,8 +21,8 @@ args="-j$(nproc --all) \
     ARCH=arm64 \
     CLANG_TRIPLE=aarch64-linux-gnu- \
     DTC_EXT=dtc \
-    CROSS_COMPILE=$GITHUB_WORKSPACE/TC/bin/aarch64-linux-gnu- \
-    CC=$GITHUB_WORKSPACE/TC/bin/clang"
+    CROSS_COMPILE=$GITHUB_WORKSPACE/gcc/bin/aarch64-linux-android- \
+    CC=$GITHUB_WORKSPACE/TC/clang-r383902/bin/clang"
 
 echo "Make defconfig"
 make ${args} picasso_user_defconfig
