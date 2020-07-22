@@ -1245,50 +1245,8 @@ static inline void dump_reg(struct smb_charger *chg, u16 addr,
 							name, addr, reg);
 }
 
-static void dump_regs(struct smb_charger *chg)
-{
-	u16 addr;
 
-	/* charger peripheral */
-	for (addr = 0x6; addr <= 0xE; addr++)
-		dump_reg(chg, CHGR_BASE + addr, "CHGR Status");
-
-	for (addr = 0x10; addr <= 0x1B; addr++)
-		dump_reg(chg, CHGR_BASE + addr, "CHGR INT");
-
-	for (addr = 0x50; addr <= 0x70; addr++)
-		dump_reg(chg, CHGR_BASE + addr, "CHGR Config");
-
-	dump_reg(chg, CHGR_BASE + addr, NULL);
-
-	for (addr = 0x6; addr <= 0x10; addr++)
-		dump_reg(chg, USBIN_BASE + addr, "USBIN Status");
-
-	for (addr = 0x12; addr <= 0x19; addr++)
-		dump_reg(chg, USBIN_BASE + addr, "USBIN INT ");
-
-	for (addr = 0x40; addr <= 0x43; addr++)
-		dump_reg(chg, USBIN_BASE + addr, "USBIN Cmd ");
-
-	for (addr = 0x58; addr <= 0x70; addr++)
-		dump_reg(chg, USBIN_BASE + addr, "USBIN Config ");
-
-	for (addr = 0x80; addr <= 0x84; addr++)
-		dump_reg(chg, USBIN_BASE + addr, "USBIN Config ");
-
-	dump_reg(chg, USBIN_BASE + addr, NULL);
-
-	for (addr = 0x06; addr <= 0x1B; addr++)
-		dump_reg(chg, TYPEC_BASE + addr, "TYPEC Status");
-
-	for (addr = 0x42; addr <= 0x72; addr++)
-		dump_reg(chg, TYPEC_BASE + addr, "TYPEC Config");
-
-	dump_reg(chg, TYPEC_BASE + 0x44, "TYPEC MODE CFG");
-	dump_reg(chg, TYPEC_BASE + addr, NULL);
-}
-
-static void smblib_rerun_apsd(struct smb_charger *chg)
+void smblib_rerun_apsd(struct smb_charger *chg)
 {
 	int rc;
 
@@ -2851,91 +2809,7 @@ static int smblib_therm_charging(struct smb_charger *chg)
 
 #define CHARGING_PERIOD_S		20
 #define NOT_CHARGING_PERIOD_S		30
-static void smblib_reg_work(struct work_struct *work)
-{
-	struct smb_charger *chg = container_of(work, struct smb_charger,
-							reg_work.work);
-	int rc, usb_present;
-	union power_supply_propval val;
-	int icl_settle, usb_cur_in, usb_vol_in, icl_sts;
-	int charger_type, typec_mode, typec_orientation;
 
-	dump_regs(chg);
-	rc = smblib_get_prop_usb_present(chg, &val);
-	if (rc < 0) {
-		pr_err("Couldn't get usb present rc=%d\n", rc);
-		schedule_delayed_work(&chg->reg_work,
-				NOT_CHARGING_PERIOD_S * HZ);
-		return;
-	}
-	usb_present = val.intval;
-
-	if (usb_present) {
-		smblib_dbg(chg, PR_OEM, "ICL vote value is %d voted by %s\n",
-					get_effective_result(chg->usb_icl_votable),
-					get_effective_client(chg->usb_icl_votable));
-		smblib_dbg(chg, PR_OEM, "FCC vote value is %d voted by %s\n",
-					get_effective_result(chg->fcc_votable),
-					get_effective_client(chg->fcc_votable));
-		smblib_dbg(chg, PR_OEM, "FV vote value is %d voted by %s\n",
-					get_effective_result(chg->fv_votable),
-					get_effective_client(chg->fv_votable));
-
-		power_supply_get_property(chg->usb_psy,
-					POWER_SUPPLY_PROP_INPUT_CURRENT_NOW,
-					&val);
-		usb_cur_in = val.intval;
-
-		power_supply_get_property(chg->usb_psy,
-					POWER_SUPPLY_PROP_VOLTAGE_NOW,
-					&val);
-		usb_vol_in = val.intval;
-
-		power_supply_get_property(chg->usb_psy,
-					POWER_SUPPLY_PROP_CURRENT_MAX,
-					&val);
-		icl_settle = val.intval;
-
-		power_supply_get_property(chg->usb_psy,
-					POWER_SUPPLY_PROP_REAL_TYPE,
-					&val);
-		charger_type = val.intval;
-
-		power_supply_get_property(chg->usb_psy,
-					POWER_SUPPLY_PROP_TYPEC_MODE,
-					&val);
-		typec_mode = val.intval;
-
-		power_supply_get_property(chg->usb_psy,
-					POWER_SUPPLY_PROP_TYPEC_CC_ORIENTATION,
-					&val);
-		typec_orientation = val.intval;
-
-		smblib_dbg(chg, PR_OEM,
-					"ICL settle value[%d], usbin adc current[%d], vbusin adc vol[%d]\n",
-					icl_settle, usb_cur_in, usb_vol_in);
-		if (!chg->usb_main_psy) {
-			chg->usb_main_psy = power_supply_get_by_name("main");
-		}
-		else {
-			power_supply_get_property(chg->usb_main_psy,
-					POWER_SUPPLY_PROP_INPUT_CURRENT_SETTLED,
-					&val);
-			icl_sts = val.intval;
-			smblib_dbg(chg, PR_OEM, "AICL_STS[%d]\n", icl_sts);
-		}
-
-		smblib_dbg(chg, PR_OEM,
-					"Type-C orientation[%d], Type-C mode[%d], Real Charger Type[%d]\n",
-					typec_orientation, typec_mode, charger_type);
-
-		schedule_delayed_work(&chg->reg_work,
-				CHARGING_PERIOD_S * HZ);
-	} else {
-		schedule_delayed_work(&chg->reg_work,
-				NOT_CHARGING_PERIOD_S * HZ);
-	}
-}
 
 #ifdef CONFIG_BQ2597X_CHARGE_PUMP
 static void smblib_thermal_setting_work(struct work_struct *work)
@@ -4865,6 +4739,7 @@ int smblib_get_prop_smb_health(struct smb_charger *chg)
 {
 	int rc;
 	int input_present;
+	union power_supply_propval prop = {0, };
 
 	rc = smblib_is_input_present(chg, &input_present);
 	if (rc < 0)
@@ -4873,28 +4748,10 @@ int smblib_get_prop_smb_health(struct smb_charger *chg)
 	if ((input_present == INPUT_NOT_PRESENT) || (!is_cp_available(chg)))
 		return POWER_SUPPLY_HEALTH_UNKNOWN;
 
-	if (chg->wa_flags & SW_THERM_REGULATION_WA) {
-		if (chg->smb_temp == -ENODATA)
-			return POWER_SUPPLY_HEALTH_UNKNOWN;
-
-		if (chg->smb_temp > SMB_TEMP_RST_THRESH)
-			return POWER_SUPPLY_HEALTH_OVERHEAT;
-
-		if (chg->smb_temp > SMB_TEMP_REG_H_THRESH)
-			return POWER_SUPPLY_HEALTH_HOT;
-
-		if (chg->smb_temp > SMB_TEMP_REG_L_THRESH)
-			return POWER_SUPPLY_HEALTH_WARM;
-
-		return POWER_SUPPLY_HEALTH_COOL;
-	}
-
-	rc = smblib_read(chg, SMB_TEMP_STATUS_REG, &stat);
-	if (rc < 0) {
-		smblib_err(chg, "Couldn't read SMB_TEMP_STATUS_REG, rc=%d\n",
-				rc);
-		return POWER_SUPPLY_HEALTH_UNKNOWN;
-	}
+	rc = power_supply_get_property(chg->cp_psy,
+				POWER_SUPPLY_PROP_CP_DIE_TEMP, &prop);
+	if (rc < 0)
+		return rc;
 
 	if (prop.intval > SMB_TEMP_RST_THRESH)
 		return POWER_SUPPLY_HEALTH_OVERHEAT;
@@ -9198,17 +9055,7 @@ int smblib_init(struct smb_charger *chg)
 					smblib_conn_therm_work);
 	INIT_DELAYED_WORK(&chg->pr_lock_clear_work,
 					smblib_pr_lock_clear_work);
-	if (chg->reg_dump_enable) {
-		INIT_DELAYED_WORK(&chg->reg_work, smblib_reg_work);
-	}
-#ifdef CONFIG_BQ2597X_CHARGE_PUMP
-	INIT_DELAYED_WORK(&chg->sw_cv_fcc_limit_work, sw_cv_fcc_limit_work);
-	INIT_DELAYED_WORK(&chg->thermal_setting_work, smblib_thermal_setting_work);
-	INIT_DELAYED_WORK(&chg->reduce_fcc_work, reduce_fcc_work);
-	INIT_DELAYED_WORK(&chg->charger_soc_decimal, smblib_charger_soc_decimal);
-#endif
-	INIT_DELAYED_WORK(&chg->after_ffc_chg_dis_work, smblib_after_ffc_chg_dis_work);
-	INIT_DELAYED_WORK(&chg->after_ffc_chg_en_work, smblib_after_ffc_chg_en_work);
+	timer_setup(&chg->apsd_timer, apsd_timer_cb, 0);
 
 	if (chg->wa_flags & CHG_TERMINATION_WA) {
 		INIT_WORK(&chg->chg_termination_work,
