@@ -1491,7 +1491,7 @@ static void update_cpu_busy_time(struct task_struct *p, struct rq *rq,
 	u32 old_curr_window = p->ravg.curr_window;
 
 	new_window = mark_start < window_start;
-	if (new_window) {
+	if (new_window)
 		full_window = (window_start - mark_start) >= window_size;
 
 	new_task = is_new_task(p);
@@ -1504,6 +1504,8 @@ static void update_cpu_busy_time(struct task_struct *p, struct rq *rq,
 		if (new_window)
 			rollover_task_window(p, full_window);
 	}
+
+	new_task = is_new_task(p);
 
 	if (p_is_curr_task && new_window) {
 		rollover_cpu_window(rq, full_window);
