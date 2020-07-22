@@ -1510,9 +1510,6 @@ static void update_cpu_busy_time(struct task_struct *p, struct rq *rq,
 	new_window = mark_start < window_start;
 	if (new_window) {
 		full_window = (window_start - mark_start) >= window_size;
-		if (p->ravg.active_windows < USHRT_MAX)
-			p->ravg.active_windows++;
-	}
 
 	new_task = is_new_task(p);
 
