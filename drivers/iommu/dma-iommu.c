@@ -316,28 +316,29 @@ int iommu_dma_init_domain(struct iommu_domain *domain, dma_addr_t base,
 }
 EXPORT_SYMBOL(iommu_dma_init_domain);
 
-/* Should be called from camera driver probe, before you call dma_map */
-void iommu_dma_reserve_iova(struct device *dev, unsigned long pfn_lo, unsigned long pfn_hi)
+/*
+ * Should be called prior to using dma-apis
+ */
+int iommu_dma_reserve_iova(struct device *dev, dma_addr_t base,
+			   u64 size)
 {
 	struct iommu_domain *domain;
-	struct iommu_dma_cookie *cookie;
 	struct iova_domain *iovad;
-	struct iova *iova;
-	unsigned long lo, hi;
+	unsigned long pfn_lo, pfn_hi;
 
 	domain = iommu_get_domain_for_dev(dev);
 	if (!domain || !domain->iova_cookie)
-		return;	
+		return -EINVAL;
 
-	pr_err("CAMERADBG: %s: %s: reserveiova=%lx-%lx\n", __func__, dev_name(dev), pfn_lo, pfn_hi);
-	cookie = domain->iova_cookie;
-	iovad = &cookie->iovad;
+	iovad = &((struct iommu_dma_cookie *)domain->iova_cookie)->iovad;
 
-	lo = iova_pfn(iovad, pfn_lo);
-	hi = iova_pfn(iovad, pfn_hi);
+	/* iova will be freed automatically by put_iova_domain() */
+	pfn_lo = iova_pfn(iovad, base);
+	pfn_hi = iova_pfn(iovad, base + size - 1);
+	if (!reserve_iova(iovad, pfn_lo, pfn_hi))
+		return -EINVAL;
 
-	/* Memory leak it */
-	iova = reserve_iova(iovad, lo, hi);
+	return 0;
 }
 
 /*
