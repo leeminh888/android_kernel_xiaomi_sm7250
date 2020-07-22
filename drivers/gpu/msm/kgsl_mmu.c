@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2002,2007-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 #include <linux/slab.h>
@@ -696,6 +695,7 @@ static struct kgsl_pagetable *nommu_getpagetable(struct kgsl_mmu *mmu,
 static int nommu_init(struct kgsl_mmu *mmu)
 {
 	mmu->features |= KGSL_MMU_GLOBAL_PAGETABLE;
+	set_bit(KGSL_MMU_STARTED, &mmu->flags);
 	return 0;
 }
 
