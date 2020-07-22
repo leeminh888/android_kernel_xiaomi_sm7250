@@ -325,6 +325,8 @@ static DEVICE_ATTR(fts_charger_mode, S_IRUGO | S_IWUSR, fts_touch_charger_show, 
 
 #endif
 
+static DEVICE_ATTR_RW(fts_report_rate);
+
 static struct attribute *fts_touch_mode_attrs[] = {
 #if FTS_GLOVE_EN
 	&dev_attr_fts_glove_mode.attr,

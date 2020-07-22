@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
  */
 
 #ifndef __QCOM_TSENS_H__
@@ -212,7 +211,11 @@ struct tsens_device {
 	int				trdy_fail_ctr;
 	struct tsens_sensor		min_temp;
 	u8				min_temp_sensor_id;
-	struct tsens_sensor		sensor[0];
+	struct workqueue_struct		*tsens_reinit_work;
+	struct work_struct		therm_fwk_notify;
+	bool				tsens_reinit_wa;
+	int				tsens_reinit_cnt;
+	struct tsens_sensor             sensor[0];
 };
 
 extern const struct tsens_data data_tsens2xxx, data_tsens23xx, data_tsens24xx,
