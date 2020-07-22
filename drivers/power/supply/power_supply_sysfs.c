@@ -558,6 +558,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(termination_current),
 	POWER_SUPPLY_ATTR(ffc_termination_current),
 	POWER_SUPPLY_ATTR(recharge_vbat),
+	POWER_SUPPLY_ATTR(charger_status),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */

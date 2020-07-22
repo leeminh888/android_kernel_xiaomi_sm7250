@@ -75,5 +75,6 @@ obj-$(CONFIG_SPI_XIAOMI_TP) += spi-xiaomi-tp.o
 obj-$(CONFIG_SIMTRAY_STATUS)	+= simtray.o
 obj-$(CONFIG_AW8624_HAPTIC) += aw8624_haptic/
 obj-$(CONFIG_WIGIG_SENSING_SPI)	+= wigig_sensing.o
+obj-$(CONFIG_QTI_MAXIM_FAN_CONTROLLER) += max31760.o
 obj-$(CONFIG_QTI_XR_SMRTVWR_MISC) += qxr-stdalonevwr.o
 
