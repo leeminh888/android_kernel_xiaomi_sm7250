@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2014-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 #ifndef _QCOM_INLINE_CRYPTO_ENGINE_H_
@@ -9,6 +8,8 @@
 
 #include <linux/platform_device.h>
 #include <linux/cdev.h>
+#include <linux/atomic.h>
+#include <linux/wait.h>
 
 struct request;
 
@@ -68,7 +69,10 @@ struct ice_device {
 	struct qcom_ice_bus_vote bus_vote;
 	ktime_t			ice_reset_start_time;
 	ktime_t			ice_reset_complete_time;
-	void             *key_table;
+	void                    *key_table;
+	atomic_t		is_ice_suspended;
+	atomic_t		is_ice_busy;
+	wait_queue_head_t       block_suspend_ice_queue;
 };
 
 struct ice_crypto_setting {
