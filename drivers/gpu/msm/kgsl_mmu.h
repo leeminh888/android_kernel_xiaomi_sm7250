@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2002,2007-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 #ifndef __KGSL_MMU_H
 #define __KGSL_MMU_H
@@ -164,6 +163,9 @@ struct kgsl_mmu {
 		struct kgsl_iommu iommu;
 	} priv;
 };
+
+/* KGSL MMU FLAGS */
+#define KGSL_MMU_STARTED BIT(0)
 
 #define KGSL_IOMMU_PRIV(_device) (&((_device)->mmu.priv.iommu))
 
