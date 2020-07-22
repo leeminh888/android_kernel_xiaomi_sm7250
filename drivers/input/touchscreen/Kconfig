@@ -1368,4 +1368,6 @@ config I2C_STATUS_FOR_TOUCH
 source "drivers/input/touchscreen/focaltech_touch/Kconfig"
 source "drivers/input/touchscreen/focaltouch/Kconfig"
 
+source "drivers/input/touchscreen/focaltech_touch/Kconfig"
+
 endif

@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright (c) 2008-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+/* Copyright (c) 2008-2020, The Linux Foundation. All rights reserved.
  */
 
 #ifndef DIAGCHAR_SHARED
@@ -143,10 +142,10 @@
  * a new RANGE of SSIDs to the msg_mask_tbl.
  */
 #define MSG_MASK_TBL_CNT		26
-#define APPS_EVENT_LAST_ID		0xCB4
+#define APPS_EVENT_LAST_ID		0xCB9
 
 #define MSG_SSID_0			0
-#define MSG_SSID_0_LAST			130
+#define MSG_SSID_0_LAST			132
 #define MSG_SSID_1			500
 #define MSG_SSID_1_LAST			506
 #define MSG_SSID_2			1000
@@ -355,6 +354,8 @@ static const uint32_t msg_bld_masks_0[] = {
 	MSG_LVL_MED,
 	MSG_LVL_MED,
 	MSG_LVL_HIGH,
+	MSG_LVL_HIGH,
+	MSG_LVL_LOW | MSG_LVL_MED | MSG_LVL_HIGH | MSG_LVL_ERROR,
 	MSG_LVL_HIGH
 };
 
@@ -917,7 +918,7 @@ static const uint32_t msg_bld_masks_25[] = {
 /* LOG CODES */
 static const uint32_t log_code_last_tbl[] = {
 	0x0,	/* EQUIP ID 0 */
-	0x1CB2,	/* EQUIP ID 1 */
+	0x1CC6,	/* EQUIP ID 1 */
 	0x0,	/* EQUIP ID 2 */
 	0x0,	/* EQUIP ID 3 */
 	0x4910,	/* EQUIP ID 4 */

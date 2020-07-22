@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
  *
  * drivers/mmc/host/sdhci-msm.c - Qualcomm Technologies, Inc. MSM SDHCI Platform
  * driver source file
@@ -866,16 +865,23 @@ static int msm_init_cm_dll(struct sdhci_host *host,
 			| CORE_CK_OUT_EN), host->ioaddr +
 			msm_host_offset->CORE_DLL_CONFIG);
 
-	wait_cnt = 50;
-	/* Wait until DLL_LOCK bit of DLL_STATUS register becomes '1' */
-	while (!(readl_relaxed(host->ioaddr +
-		msm_host_offset->CORE_DLL_STATUS) & CORE_DLL_LOCK)) {
-		/* max. wait for 50us sec for LOCK bit to be set */
-		if (--wait_cnt == 0) {
-			pr_err("%s: %s: DLL failed to LOCK\n",
-				mmc_hostname(mmc), __func__);
-			rc = -ETIMEDOUT;
-			goto out;
+	/* For hs400es mode, no need to wait for core dll lock */
+	if (msm_host->mmc->card
+			&& !(msm_host->enhanced_strobe &&
+				mmc_card_strobe(msm_host->mmc->card))) {
+		wait_cnt = 50;
+		/* Wait until DLL_LOCK bit of DLL_STATUS register becomes '1' */
+		while (!(readl_relaxed(host->ioaddr +
+			msm_host_offset->CORE_DLL_STATUS) & CORE_DLL_LOCK)) {
+			/* max. wait for 50us sec for LOCK bit to be set */
+			if (--wait_cnt == 0) {
+				pr_err("%s: %s: DLL failed to LOCK\n",
+					mmc_hostname(mmc), __func__);
+				rc = -ETIMEDOUT;
+				goto out;
+			}
+			/* wait for 1us before polling again */
+			udelay(1);
 		}
 		/* wait for 1us before polling again */
 		udelay(1);
@@ -4051,6 +4057,8 @@ static void sdhci_msm_reset(struct sdhci_host *host, u8 mask)
 	}
 
 	sdhci_reset(host, mask);
+	if ((host->mmc->caps2 & MMC_CAP2_CQE) && (mask & SDHCI_RESET_ALL))
+		cqhci_suspend(host->mmc);
 }
 
 /*

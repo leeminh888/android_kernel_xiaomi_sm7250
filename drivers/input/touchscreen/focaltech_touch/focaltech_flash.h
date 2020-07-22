@@ -1,5 +1,5 @@
 /************************************************************************
-* Copyright (C) 2010-2017, Focaltech Systems (R)£¬All Rights Reserved.
+* Copyright (C) 2010-2017, Focaltech Systems (R)ï¿½ï¿½All Rights Reserved.
 *
 * File Name: focaltech_flash.h
 *
