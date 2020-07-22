@@ -725,14 +725,12 @@ static ssize_t fts_tprwreg_store(struct device *dev, struct device_attribute *at
 	if (2 == cmd_length) {
 		rw_op.type = RWREG_OP_READ;
 		rw_op.len = 1;
-
 		rw_op.reg = shex_to_int(buf, 2);
 	} else if (4 == cmd_length) {
 		rw_op.type = RWREG_OP_WRITE;
 		rw_op.len = 1;
 		rw_op.reg = shex_to_int(buf, 2);
 		rw_op.val = shex_to_int(buf + 2, 2);
-
 	} else if (cmd_length < 5) {
 		FTS_ERROR("Invalid cmd buffer");
 		mutex_unlock(&input_dev->mutex);

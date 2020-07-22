@@ -948,6 +948,10 @@ static void receive_file_work(struct work_struct *data)
 		mtp_log("- count(%lld) not multiple of mtu(%d)\n",
 						count, dev->ep_out->maxpacket);
 	mutex_lock(&dev->read_mutex);
+	if (dev->state == STATE_OFFLINE) {
+		r = -EIO;
+		goto fail;
+	}
 	while (count > 0 || write_req) {
 		if (count > 0) {
 			mutex_lock(&dev->read_mutex);
@@ -1052,6 +1056,7 @@ static void receive_file_work(struct work_struct *data)
 			mutex_unlock(&dev->read_mutex);
 		}
 	}
+fail:
 	mutex_unlock(&dev->read_mutex);
 	mtp_log("returning %d\n", r);
 	/* write the result */

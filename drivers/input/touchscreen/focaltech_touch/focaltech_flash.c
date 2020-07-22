@@ -1006,7 +1006,6 @@ int fts_flash_read(struct i2c_client *client, u32 addr, u8 *buf, u32 len)
 	int ret = 0;
 
 	FTS_INFO("***********read flash***********");
-
 	if ((NULL == buf) || (0 == len)) {
 		FTS_ERROR("buf is NULL or len is 0");
 		return -EINVAL;
