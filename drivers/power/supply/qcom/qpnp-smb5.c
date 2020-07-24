@@ -1917,7 +1917,11 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 				POWER_SUPPLY_PROP_VOLTAGE_NOW, val);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		val->intval = get_effective_result_locked(chg->fv_votable);
+		val->intval = get_client_vote(chg->fv_votable,
+					      QNOVO_VOTER);
+		if (val->intval < 0)
+			val->intval = get_client_vote(chg->fv_votable,
+						      BATT_PROFILE_VOTER);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_QNOVO:
 		val->intval = get_client_vote_locked(chg->fv_votable,

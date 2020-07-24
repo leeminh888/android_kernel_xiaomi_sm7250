@@ -87,6 +87,9 @@ static struct attribute *qg_attrs[] = {
 	&dev_attr_soc_interval_ms.attr,
 	&dev_attr_soc_cold_interval_ms.attr,
 	&dev_attr_maint_soc_update_ms.attr,
+	&dev_attr_fvss_delta_soc_interval_ms.attr,
+	&dev_attr_fvss_vbat_scaling.attr,
+	&dev_attr_qg_ss_feature.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(qg);
@@ -308,7 +311,7 @@ static int qg_store_soc_params(struct qpnp_qg *chip)
 	return rc;
 }
 
-#define MAX_FIFO_CNT_ESR		50
+#define MAX_FIFO_CNT_FOR_ESR			50
 static int qg_config_s2_state(struct qpnp_qg *chip,
 		enum s2_state requested_state, bool state_enable,
 		bool process_fifo)
@@ -366,7 +369,9 @@ static int qg_config_s2_state(struct qpnp_qg *chip,
 		return -EINVAL;
 	}
 
-	qg_esr_mod_count = MAX_FIFO_CNT_ESR / fifo_length;
+	if (fifo_length)
+		qg_esr_mod_count = MAX_FIFO_CNT_FOR_ESR / fifo_length;
+
 	rc = qg_master_hold(chip, true);
 	if (rc < 0) {
 		pr_err("Failed to hold master, rc=%d\n", rc);
@@ -3505,12 +3510,12 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 		chip->bp.fastchg_curr_ma = -EINVAL;
 	}
 
-	rc = of_property_read_u32(profile_node, "qcom,nom-batt-capacity-mah",
-			&chip->bp.nom_cap_uah);
-	if (rc < 0) {
-		pr_err("battery nominal capacity unavailable, rc:%d\n", rc);
-		chip->bp.nom_cap_uah = -EINVAL;
-	}
+	/*
+	 * Update the max fcc values based on QG subtype including
+	 * error margins.
+	 */
+	chip->bp.fastchg_curr_ma = min(chip->max_fcc_limit_ma,
+					chip->bp.fastchg_curr_ma);
 
 	rc = of_property_read_u32(profile_node, "qcom,qg-batt-profile-ver",
 				&chip->bp.qg_profile_version);
@@ -3905,6 +3910,8 @@ static int qg_sanitize_sdam(struct qpnp_qg *chip)
 }
 
 #define ADC_CONV_DLY_512MS		0xA
+#define IBAT_5A_FCC_MA			4800
+#define IBAT_10A_FCC_MA			9600
 static int qg_hw_init(struct qpnp_qg *chip)
 {
 	int rc, temp;
@@ -3917,6 +3924,11 @@ static int qg_hw_init(struct qpnp_qg *chip)
 		pr_err("Failed to read QG subtype rc=%d\n", rc);
 		return rc;
 	}
+
+	if (chip->qg_subtype == QG_ADC_IBAT_5A)
+		chip->max_fcc_limit_ma = IBAT_5A_FCC_MA;
+	else
+		chip->max_fcc_limit_ma = IBAT_10A_FCC_MA;
 
 	rc = qg_set_wa_flags(chip);
 	if (rc < 0) {
@@ -4812,6 +4824,8 @@ static int qg_parse_dt(struct qpnp_qg *chip)
 		else
 			chip->dt.tcss_entry_soc = temp;
 	}
+
+	chip->dt.bass_enable = of_property_read_bool(node, "qcom,bass-enable");
 
 	chip->dt.multi_profile_load = of_property_read_bool(node,
 					"qcom,multi-profile-load");
