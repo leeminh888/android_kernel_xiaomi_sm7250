@@ -923,10 +923,6 @@ void rmnet_shs_wq_mem_update_cached_netdevs(void)
 		/* Set netdev name and ip mismatch count */
 		rmnet_shs_wq_netdev_usr[idx].coal_ip_miss = priv->stats.coal.close.ip_miss;
 		rmnet_shs_wq_netdev_usr[idx].hw_evict = priv->stats.coal.close.hw_evict;
-		rmnet_shs_wq_netdev_usr[idx].coal_tcp = priv->stats.coal.coal_tcp;
-		rmnet_shs_wq_netdev_usr[idx].coal_tcp_bytes = priv->stats.coal.coal_tcp_bytes;
-		rmnet_shs_wq_netdev_usr[idx].coal_udp = priv->stats.coal.coal_udp;
-		rmnet_shs_wq_netdev_usr[idx].coal_udp_bytes = priv->stats.coal.coal_udp_bytes;
 		rmnet_shs_wq_netdev_usr[idx].mux_id = priv->mux_id;
 		strlcpy(rmnet_shs_wq_netdev_usr[idx].name,
 			ep->ep->name,
