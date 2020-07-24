@@ -17,16 +17,12 @@ jobs:
       run: echo "::set-output name=timestamp::$(date +%s)"
     - name: ccache
       uses: actions/cache@v1
-      env:
-        cache-name: ccache
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.timestamp.outputs.timestamp }}
+        key: build-${{ steps.timestamp.outputs.timestamp }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.timestamp.outputs.timestamp }}
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+          build-${{ steps.timestamp.outputs.timestamp }}
+          build-
     - name: Build With Shell
       run: |
         bash kernel/build-cbl.sh
