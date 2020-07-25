@@ -119,6 +119,34 @@ const uint16_t gesture_key_array[] = {
 	KEY_POWER,  //GESTURE_SLIDE_LEFT
 	KEY_POWER,  //GESTURE_SLIDE_RIGHT
 };
+bool enable_gesture_mode = false; // for gesture
+EXPORT_SYMBOL(enable_gesture_mode);
+bool delay_gesture = false;
+bool suspend_state = false;
+#define WAKEUP_OFF 4
+#define WAKEUP_ON 5
+int nvt_gesture_switch(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+{
+	if (type == EV_SYN && code == SYN_CONFIG)
+	{
+		if (suspend_state)
+		{
+			if ((value != WAKEUP_OFF) || enable_gesture_mode)
+			{
+				delay_gesture = true;
+			}
+		}
+		NVT_LOG("choose the gesture mode yes or not\n");
+		if(value == WAKEUP_OFF){
+			NVT_LOG("disable gesture mode\n");
+			enable_gesture_mode = false;
+		}else if(value == WAKEUP_ON){
+			NVT_LOG("enable gesture mode\n");
+			enable_gesture_mode  = true;
+		}
+	}
+	return 0;
+}
 #endif
 
 #ifdef CONFIG_MTK_SPI
@@ -791,6 +819,28 @@ static ssize_t nvt_flash_read(struct file *file, char __user *buff, size_t count
 	cancel_delayed_work_sync(&nvt_esd_check_work);
 	nvt_esd_check_enable(false);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
+
+
+	if (enable_gesture_mode) {
+	//---write i2c command to enter "wakeup gesture mode"---
+	buf[0] = EVENT_MAP_HOST_CMD;
+	buf[1] = 0x13;
+	CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 2);
+
+	enable_irq_wake(ts->client->irq);
+
+	NVT_LOG("Enabled touch wakeup gesture\n");
+
+	} else {  // WAKEUP_GESTURE
+	disable_irq(ts->client->irq);
+
+	//---write i2c command to enter "deep sleep mode"---
+	buf[0] = EVENT_MAP_HOST_CMD;
+	buf[1] = 0x11;
+	CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 2);
+	}// WAKEUP_GESTURE
+
+
 
 	spi_wr = str[0] >> 7;
 	memcpy(buf, str+2, ((str[0] & 0x7F) << 8) | str[1]);
@@ -2984,6 +3034,17 @@ static int32_t nvt_ts_resume(struct device *dev)
 
 
 	nvt_irq_enable(true);
+if (delay_gesture) {
+	enable_gesture_mode = !enable_gesture_mode;
+}
+if (!enable_gesture_mode) {
+	enable_irq(ts->client->irq);
+}
+
+if (delay_gesture) {
+	enable_gesture_mode = !enable_gesture_mode;
+}
+
 
 #if NVT_TOUCH_ESD_PROTECT
 	nvt_esd_check_enable(false);
