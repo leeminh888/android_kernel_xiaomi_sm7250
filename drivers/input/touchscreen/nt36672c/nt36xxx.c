@@ -103,7 +103,6 @@ const uint16_t touch_key_array[TOUCH_KEY_NUM] = {
 };
 #endif
 
-#if WAKEUP_GESTURE
 const uint16_t gesture_key_array[] = {
 	KEY_POWER,  //GESTURE_WORD_C
 	KEY_POWER,  //GESTURE_WORD_W
@@ -119,7 +118,6 @@ const uint16_t gesture_key_array[] = {
 	KEY_POWER,  //GESTURE_SLIDE_LEFT
 	KEY_POWER,  //GESTURE_SLIDE_RIGHT
 };
-#endif
 
 #ifdef CONFIG_MTK_SPI
 const struct mt_chip_conf spi_ctrdata = {
@@ -936,8 +934,6 @@ static void nvt_flash_proc_deinit(void)
 	}
 }
 #endif
-
-#if WAKEUP_GESTURE
 #define GESTURE_WORD_C          12
 #define GESTURE_WORD_W          13
 #define GESTURE_WORD_V          14
@@ -1044,7 +1040,6 @@ void nvt_ts_wakeup_gesture_report(uint8_t gesture_id, uint8_t *data)
 		input_sync(ts->input_dev);
 	}
 }
-#endif
 
 /*******************************************************
 Description:
@@ -1407,11 +1402,10 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	int32_t i = 0;
 	int32_t finger_cnt = 0;
 
-#if WAKEUP_GESTURE
 	if (bTouchIsAwake == 0) {
+	NVT_LOG("WAKEUP_GESTURE in nvt_ts_work_func pmwakeup \n");
 		pm_wakeup_event(&ts->input_dev->dev, 5000);
 	}
-#endif
 	mutex_lock(&ts->lock);
 
 	if (ts->dev_pm_suspend) {
@@ -1468,14 +1462,13 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	}
 #endif
 
-#if WAKEUP_GESTURE
 	if (bTouchIsAwake == 0) {
+	NVT_LOG("WAKEUP_GESTURE in nvt_ts_work_func bTouchIsAwake=0 \n");
 		input_id = (uint8_t)(point_data[1] >> 3);
 		nvt_ts_wakeup_gesture_report(input_id, point_data);
 		mutex_unlock(&ts->lock);
 		return IRQ_HANDLED;
 	}
-#endif
 
 	finger_cnt = 0;
 
@@ -2256,9 +2249,7 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 {
 	struct spi_device *ts_xsfer;
 	int32_t ret = 0;
-#if ((TOUCH_KEY_NUM > 0) || WAKEUP_GESTURE)
 	int32_t retry = 0;
-#endif
 	struct attribute_group *attrs_p = NULL;
 
 	NVT_LOG("start\n");
@@ -2436,11 +2427,10 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	}
 #endif
 
-#if WAKEUP_GESTURE
 	for (retry = 0; retry < (sizeof(gesture_key_array) / sizeof(gesture_key_array[0])); retry++) {
+        NVT_LOG("WAKEUP_GESTURE in input_set_capability set \n");
 		input_set_capability(ts->input_dev, EV_KEY, gesture_key_array[retry]);
 	}
-#endif
 
 	sprintf(ts->phys, "input/ts");
 	ts->input_dev->name = NVT_TS_NAME;
@@ -2470,7 +2460,7 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 			NVT_LOG("request irq %d succeed\n", ts->client->irq);
 		}
 	}
-
+    NVT_LOG("WAKEUP_GESTURE before set, before nvt_switch_mode_work \n");
 	INIT_WORK(&ts->switch_mode_work, nvt_switch_mode_work);
 
 	nvt_lockdown_wq = alloc_workqueue("nvt_lockdown_wq", WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
@@ -2483,9 +2473,7 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	// please make sure boot update start after display reset(RESX) sequence
 	queue_delayed_work(nvt_lockdown_wq, &ts->nvt_lockdown_work, msecs_to_jiffies(5000));
 
-#if WAKEUP_GESTURE
 	device_init_wakeup(&ts->input_dev->dev, 1);
-#endif
 	ts->ic_state = NVT_IC_INIT;
 	ts->dev_pm_suspend = false;
 	ts->gesture_command_delayed = -1;
@@ -2671,9 +2659,7 @@ err_create_nvt_fwu_wq_failed:
 	}
 #endif
 err_create_nvt_lockdown_wq_failed:
-#if WAKEUP_GESTURE
 	device_init_wakeup(&ts->input_dev->dev, 0);
-#endif
 	free_irq(ts->client->irq, ts);
 err_int_request_failed:
 	input_unregister_device(ts->input_dev);
@@ -2756,9 +2742,8 @@ static int32_t nvt_ts_remove(struct platform_device *pdev)
 	}
 #endif
 
-#if WAKEUP_GESTURE
+    NVT_LOG("WAKEUP_GESTURE after fw update \n");
 	device_init_wakeup(&ts->input_dev->dev, 0);
-#endif
 
 	nvt_irq_enable(false);
 	free_irq(ts->client->irq, ts);
@@ -2819,9 +2804,7 @@ static void nvt_ts_shutdown(struct platform_device *pdev)
 	}
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
-#if WAKEUP_GESTURE
 	device_init_wakeup(&ts->input_dev->dev, 0);
-#endif
 }
 
 /*******************************************************

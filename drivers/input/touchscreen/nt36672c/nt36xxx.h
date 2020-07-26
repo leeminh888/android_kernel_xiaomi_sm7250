@@ -102,9 +102,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 #define PACKET_PALM_ON 3
 #define PACKET_PALM_OFF 4
 
-#if WAKEUP_GESTURE
 extern const uint16_t gesture_key_array[];
-#endif
 #define BOOT_UPDATE_FIRMWARE 1
 #define DEFAULT_BOOT_UPDATE_FIRMWARE_NAME "novatek_ts_fw.bin"
 #define DEFAULT_MP_UPDATE_FIRMWARE_NAME   "novatek_ts_mp.bin"
