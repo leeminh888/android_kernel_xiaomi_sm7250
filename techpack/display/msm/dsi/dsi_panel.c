@@ -502,7 +502,6 @@ exit:
 	return rc;
 }
 
-extern bool enable_gesture_mode;
 static int dsi_panel_power_off(struct dsi_panel *panel)
 {
 	int rc = 0;
@@ -515,7 +514,6 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 			if (gpio_is_valid(panel->reset_config.reset_gpio))
 				gpio_set_value(panel->reset_config.reset_gpio, 0);
 		}
-	} else if (!enable_gesture_mode) {
 	} else {
 		if (gpio_is_valid(panel->reset_config.reset_gpio))
 			gpio_set_value(panel->reset_config.reset_gpio, 0);
@@ -3364,7 +3362,6 @@ end:
 	utils->node = panel->panel_of_node;
 }
 
-extern char g_lcd_id[128];
 struct dsi_panel *dsi_panel_get(struct device *parent,
 				struct device_node *of_node,
 				struct device_node *parser_node,
@@ -3396,7 +3393,6 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	 * Set panel type to LCD as default.
 	 */
 	panel->panel_type = DSI_DISPLAY_PANEL_TYPE_LCD;
-	strcpy(g_lcd_id,panel->name);
 	panel_physical_type = utils->get_property(utils->data,
 				"qcom,mdss-dsi-panel-physical-type", NULL);
 	if (panel_physical_type && !strcmp(panel_physical_type, "oled"))
