@@ -7,9 +7,9 @@ sudo apt-get -y --no-install-recommends install bison flex libc6 libstdc++6 ccac
 
 mkdir -p $GITHUB_WORKSPACE/TC
 cd $GITHUB_WORKSPACE/TC
-wget 'https://github.com/kdrag0n/proton-clang-build/releases/download/20200725/proton_clang-12.0.0-20200725.tar.zst'
-tar -I zstd -xf proton_clang-12.0.0-20200725.tar.zst
-mv proton_clang-12.0.0-20200725/* ./
+wget 'https://github.com/kdrag0n/proton-clang-build/releases/download/20200117/proton_clang-11.0.0-20200117.tar.zst'
+tar -I zstd -xf proton_clang-11.0.0-20200117.tar.zst
+mv proton_clang-11.0.0-20200117/* ./
 echo "unarchived!"
 
 
