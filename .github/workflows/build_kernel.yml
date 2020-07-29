@@ -1,0 +1,21 @@
+name: Build Kernel test
+on:
+  push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+        path: kernel
+    - name: Build With Shell
+      run: |
+        bash kernel/build-cbl.sh
+    - name : Upload artifact
+      uses: actions/upload-artifact@master
+      with:
+        path: kernel/out/arch/arm64/boot/
+        name: out-boot-folder
