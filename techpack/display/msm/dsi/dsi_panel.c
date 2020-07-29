@@ -14,7 +14,6 @@
 #include "dsi_panel.h"
 #include "dsi_ctrl_hw.h"
 #include "dsi_parser.h"
-#include <linux/double_click.h>
 #include "../../../../kernel/irq/internals.h"
 
 /**
@@ -452,16 +451,15 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 {
 	int rc = 0;
 
-	if (panel->is_tddi_flag) {
-		if (!is_tp_doubleclick_enable()||panel->panel_dead_flag) {
+	if (panel->mi_cfg.is_tddi_flag) {
+		if (!panel->mi_cfg.tddi_doubleclick_flag || panel->mi_cfg.panel_dead_flag) {
 			rc = dsi_pwr_enable_regulator(&panel->power_info, true);
-			if (panel->panel_dead_flag)
-				panel->panel_dead_flag = false;
+			if (panel->mi_cfg.panel_dead_flag)
+				panel->mi_cfg.panel_dead_flag = false;
 		}
 	} else {
 		rc = dsi_pwr_enable_regulator(&panel->power_info, true);
 	}
-
 	if (rc) {
 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
 				panel->name, rc);
@@ -509,8 +507,8 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
 		gpio_set_value(panel->reset_config.disp_en_gpio, 0);
 
-	if (panel->is_tddi_flag) {
-		if (!is_tp_doubleclick_enable()||panel->panel_dead_flag) {
+	if (panel->mi_cfg.is_tddi_flag) {
+		if (!panel->mi_cfg.tddi_doubleclick_flag || panel->mi_cfg.panel_dead_flag) {
 			if (gpio_is_valid(panel->reset_config.reset_gpio))
 				gpio_set_value(panel->reset_config.reset_gpio, 0);
 		}
@@ -518,6 +516,7 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		if (gpio_is_valid(panel->reset_config.reset_gpio))
 			gpio_set_value(panel->reset_config.reset_gpio, 0);
 	}
+
 	if (gpio_is_valid(panel->reset_config.lcd_mode_sel_gpio))
 		gpio_set_value(panel->reset_config.lcd_mode_sel_gpio, 0);
 
@@ -534,8 +533,8 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		       rc);
 	}
 
-	if (panel->is_tddi_flag) {
-        if (!is_tp_doubleclick_enable()||panel->panel_dead_flag) {
+	if (panel->mi_cfg.is_tddi_flag) {
+		if(!panel->mi_cfg.tddi_doubleclick_flag || panel->mi_cfg.panel_dead_flag) {
 			rc = dsi_pwr_enable_regulator(&panel->power_info, false);
 			if (rc)
 				pr_err("[%s] failed to enable vregs, rc=%d\n", panel->name, rc);
@@ -2120,9 +2119,6 @@ static int dsi_panel_parse_misc_features(struct dsi_panel *panel)
 
 	panel->lp11_init = utils->read_bool(utils->data,
 			"qcom,mdss-dsi-lp11-init");
-	panel->is_tddi_flag = utils->read_bool(utils->data,
-			"qcom,is-tddi-flag");
-
 	return 0;
 }
 
