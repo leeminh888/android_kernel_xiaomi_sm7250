@@ -23,6 +23,6 @@ args="-j$(nproc --all) \
     CC=$GITHUB_WORKSPACE/TC/bin/clang"
 
 echo "Make defconfig"
-make ${args} picasso_user_defconfig
+make ${args} picasso-perf_defconfig
 echo "Make defconfig done, start Make"
 make ${args}
